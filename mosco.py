@@ -16,7 +16,7 @@ if not MOSCO_TOKEN:
 bot = telebot.TeleBot(MOSCO_TOKEN)
 
 # معرّف المالك (يجب أن يكون ID المستخدم الخاص بك)
-ADMIN_USER_ID = 7602163093 # هذا هو معرّف المالك (تم إصلاح المسافة هنا)
+ADMIN_USER_ID = 7602163093 # هذا هو معرّف المالك
 DATABASE_NAME = 'bot_data.db'
 
 
