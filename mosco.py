@@ -168,6 +168,8 @@ def send_welcome(message):
     
     user_chat_id = message.chat.id 
     user_id = message.from_user.id
+    # Get the user's first name
+    user_first_name = message.from_user.first_name if message.from_user.first_name else "صديقي"
 
     # Add the user's private chat with the bot to their target chats
     if add_user_target_chat_to_db(user_id, user_chat_id):
@@ -178,11 +180,10 @@ def send_welcome(message):
     if not is_authorized(user_id):
         markup = telebot.types.InlineKeyboardMarkup()
         markup.add(telebot.types.InlineKeyboardButton("تواصل مع المالك", url="https://t.me/Mo_sc_ow")) 
-        bot.send_message(user_chat_id, "مرحباً بك 🔥\n\n مرحباً بك يا {user_first_name} 👋\n\n 1- دياثة وتجسس محارم عربي وبدويات 🔥🥵\n\n2- تحرش وتجسس جيران اغتصاب حقيقي🥴🥵\n\nبـوت حــفـلات ديـاثة سوالــب🥵🌶️\n\n🌟 مرحباً بك في بوت الشير المتطور! 🌟\n\n لا يمكنك استخدام هذا البوت عليك الرجوع الي المالك \n\n\n✨ Developer: @Mo_sc_ow\n\n 📢 Channal : @Vib_one", reply_markup=markup)
+        # Modified line here to include user_first_name using an f-string
+        bot.send_message(user_chat_id, f"مرحباً بك 🔥\n\n مرحباً بك يا {user_first_name} 👋\n\n 1- دياثة وتجسس محارم عربي وبدويات 🔥🥵\n\n2- تحرش وتجسس جيران اغتصاب حقيقي🥴🥵\n\nبـوت حــفـلات ديـاثة سوالــب🥵🌶️\n\n🌟 مرحباً بك في بوت الشير المتطور! 🌟\n\n لا يمكنك استخدام هذا البوت عليك الرجوع الي المالك \n\n\n✨ Developer: @Mo_sc_ow\n\n 📢 Channal : @Vib_one", reply_markup=markup)
         return
 
-    user_first_name = message.from_user.first_name if message.from_user.first_name else "صديقي"
-    
     welcome_text = (
         "مرحباً بك 🔥\n\n"
         f"مرحباً بك يا {user_first_name} 👋\n\n"
@@ -352,7 +353,7 @@ def remove_user_by_admin(message):
         elif remove_authorized_user_from_db(user_id_to_remove):
             if user_id_to_remove in AUTHORIZED_USER_IDS:
                 AUTHORIZED_USER_IDS.remove(user_id_to_remove) # Temporarily remove from in-memory list
-            bot.send_message(message.chat.id, f"تمت إزالة المستخدم {user_id_to_remove} بنجاح.") # Corrected variable name
+            bot.send_message(message.chat.id, f"تمت إزالة المستخدم {user_id_to_remove} بنجاح.") 
         else:
             bot.send_message(message.chat.id, f"المستخدم {user_id_to_remove} ليس في قائمة المصرح لهم أصلاً.")
 
@@ -368,8 +369,6 @@ def remove_chat_by_admin(message):
         return
     try:
         chat_id_to_remove = int(message.text.strip())
-        # Admin's user ID is used here because they can remove the chat from all users' lists
-        # The function `remove_user_target_chat_from_db` already handles admin's ability to remove for all users.
         if remove_user_target_chat_from_db(message.from_user.id, chat_id_to_remove): 
             bot.send_message(message.chat.id, f"تمت إزالة الشات {chat_id_to_remove} بنجاح من جميع قوائم الشير.")
         else:
@@ -448,12 +447,12 @@ def forward_all_messages_to_user_chats(message):
             print(f"{error_message_for_user} (كود الخطأ: {e.error_code})")
             # Only send error message to user if the target chat is not the same as the source chat
             if target_chat_id != message.chat.id: 
-                    bot.send_message(message.chat.id, error_message_for_user, parse_mode="Markdown") # Added parse_mode
+                    bot.send_message(message.chat.id, error_message_for_user, parse_mode="Markdown") 
         except Exception as e: # Catch any other unexpected general errors
             failed_shares += 1
             print(f"❌ فشل الشير إلى {target_chat_id} للمستخدم {user_id} بسبب خطأ عام: {e}")
             if target_chat_id != message.chat.id:
-                bot.send_message(message.chat.id, f"❌ فشل الشير إلى `{target_chat_id}` بسبب خطأ عام: {e}", parse_mode="Markdown") # Added backticks and parse_mode
+                bot.send_message(message.chat.id, f"❌ فشل الشير إلى `{target_chat_id}` بسبب خطأ عام: {e}", parse_mode="Markdown") 
 
     bot.send_message(message.chat.id, f"✅ تم الشير بنجاح! ({successful_shares} شير ناجح، {failed_shares} شير فاشل).")
     
