@@ -193,7 +193,7 @@ def send_welcome(message):
                 "📢 *Channel:* @Vib_one"
             ).format(user_first_name=message.from_user.first_name or "صديقي"),
             reply_markup=markup,
-            parse_mode="Markdown"
+            parse_mode="MarkdownV2"
         )
         return
 
@@ -215,7 +215,8 @@ def send_welcome(message):
     bot.send_message(
         user_chat_id,
         welcome_text,
-        reply_markup=get_main_keyboard(user_id)
+        reply_markup=get_main_keyboard(user_id),
+        parse_mode='MarkdownV2'
     )
 
 # --- Callback Query Handler (Button Presses) ---
@@ -256,7 +257,7 @@ def handle_callback_query(call):
 
     elif data == "show_share_status":
         if user_id in last_shared_message:
-            bot.send_message(chat_id, f"آخر رسالة قمت بشيرها كانت:\n\n`{last_shared_message[user_id]}`", parse_mode="Markdown")
+            bot.send_message(chat_id, f"آخر رسالة قمت بشيرها كانت:\n\n`{last_shared_message[user_id]}`", parse_mode="MarkdownV2")
         else:
             bot.send_message(chat_id, "لم تقم بشير أي رسالة بعد.")
     
@@ -292,7 +293,7 @@ def handle_callback_query(call):
                 message_text += f"- لا يمكن الوصول لـ ID: `{target_id}` (خطأ عام: {e})\n"
                 print(f"خطأ عام في جلب معلومات الشات {target_id}: {e}")
         
-        bot.send_message(chat_id, message_text, parse_mode="Markdown")
+        bot.send_message(chat_id, message_text, parse_mode="MarkdownV2")
 
     elif data == "list_authorized_users": 
         if not is_admin(user_id):
@@ -307,7 +308,7 @@ def handle_callback_query(call):
             return
         
         users_list = "\n".join([str(uid) for uid in AUTHORIZED_USER_IDS])
-        bot.send_message(chat_id, f"**المستخدمون المصرح لهم:**\n{users_list}", parse_mode="Markdown")
+        bot.send_message(chat_id, f"**المستخدمون المصرح لهم:**\n{users_list}", parse_mode="MarkdownV2")
 
     elif data == "admin_add_user_prompt": 
         if not is_admin(user_id):
@@ -375,8 +376,4 @@ def remove_user_by_admin(message):
     except ValueError:
         bot.send_message(message.chat.id, "الرجاء إدخال ID صحيح (رقم).")
     finally:
-        bot.send_message(message.chat.id, "اختر من القائمة الرئيسية:", reply_markup=get_main_keyboard(message.from_user.id))
-
-def remove_chat_by_admin(message):
-    """Handler for removing a target chat by the admin."""
-    if not is_admin
+        bot.send_message(message.chat.id, "اختر من القائمة الرئيسية:", reply_markup=get_main_keyboard(message.from_user.id
