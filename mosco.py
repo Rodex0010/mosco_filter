@@ -84,17 +84,15 @@ def remove_authorized_user_from_db(user_id):
     return rows_affected > 0
 
 def get_user_target_chats(user_id):
-    """Fetches target chat IDs for a specific user. Admin gets all distinct chats."""
+    """Fetches target chat IDs for a specific user.
+       MODIFIED: Now, any authorized user can share to all distinct chats."""
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
     
-    if is_admin(user_id):
-        # Admin can share to all registered chats by any user
-        cursor.execute('SELECT DISTINCT chat_id FROM user_target_chats')
-    else:
-        # Regular user only shares to their own registered chats
-        cursor.execute('SELECT chat_id FROM user_target_chats WHERE user_id = ?', (user_id,))
-    
+    # This modification allows ALL authorized users (not just admin) to see/share to ALL registered chats.
+    # If you want only ADMIN to see all, revert this part to the original 'if is_admin(user_id):' block.
+    cursor.execute('SELECT DISTINCT chat_id FROM user_target_chats')
+        
     chats = [row[0] for row in cursor.fetchall()]
     conn.close()
     return chats
