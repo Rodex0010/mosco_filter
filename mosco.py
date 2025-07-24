@@ -15,7 +15,7 @@ if not MOSCO_TOKEN:
 bot = telebot.TeleBot(MOSCO_TOKEN)
 
 # Owner's User ID (Replace with your actual Telegram User ID)
-ADMIN_USER_ID = 7602163093
+ADMIN_USER_ID = 7602163093 # You should replace this with your actual Telegram User ID
 DATABASE_NAME = 'bot_data.db'
 
 # In-memory dictionaries to track user states
@@ -166,12 +166,10 @@ def get_main_keyboard(user_id):
 def send_welcome(message):
     """Handles /start and /help commands, welcoming authorized users or directing unauthorized ones."""
     
-    # User's chat_id (which is their user_id in private chat)
     user_chat_id = message.chat.id 
     user_id = message.from_user.id
 
-    # **NEW ADDITION**: Add the user's private chat with the bot to their target chats
-    # This ensures that when they start the bot, their private chat is included for sharing.
+    # Add the user's private chat with the bot to their target chats
     if add_user_target_chat_to_db(user_id, user_chat_id):
         print(f"User {user_id}'s private chat (ID: {user_chat_id}) added to their target chats.")
     else:
@@ -185,7 +183,6 @@ def send_welcome(message):
 
     user_first_name = message.from_user.first_name if message.from_user.first_name else "صديقي"
     
-    # Updated welcome text with new content
     welcome_text = (
         "مرحباً بك 🔥\n\n"
         f"مرحباً بك يا {user_first_name} 👋\n\n"
