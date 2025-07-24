@@ -1,20 +1,22 @@
 import telebot
 import time
 import json
-import os # تم إضافة هذه المكتبة لتحميل متغيرات البيئة
+import os # تم استيراد هذه المكتبة لتحميل متغيرات البيئة
 import sqlite3
 
 # --- إعدادات البوت الأساسية (يجب تعديلها) ---
-# تم تغيير اسم متغير البيئة هنا إلى MOSCO_TOKEN
+
+# سيتم تحميل توكن البوت من متغيرات البيئة على Railway
 MOSCO_TOKEN = os.getenv('MOSCO_TOKEN')
 if not MOSCO_TOKEN:
     print("خطأ: متغير البيئة 'MOSCO_TOKEN' غير موجود. يرجى تعيينه في Railway.")
     exit() # إيقاف التشغيل إذا لم يكن التوكن موجودًا
 
-# استخدام MOSCO_TOKEN عند إنشاء كائن البوت
+# إنشاء كائن البوت باستخدام التوكن المحمل من متغير البيئة
 bot = telebot.TeleBot(MOSCO_TOKEN)
 
-ADMIN_USER_ID = 7602163093  # هذا هو معرّف المالك
+# معرّف المالك (يجب أن يكون ID المستخدم الخاص بك)
+ADMIN_USER_ID = 7602163093 # هذا هو معرّف المالك (تم إصلاح المسافة هنا)
 DATABASE_NAME = 'bot_data.db'
 
 
@@ -39,6 +41,7 @@ def init_db():
         )
     ''')
     
+    # التأكد من أن المالك دائمًا مصرح له
     cursor.execute('INSERT OR IGNORE INTO authorized_users (user_id) VALUES (?)', (ADMIN_USER_ID,))
     
     conn.commit()
@@ -60,7 +63,7 @@ def add_authorized_user_to_db(user_id):
         cursor.execute('INSERT INTO authorized_users (user_id) VALUES (?)', (user_id,))
         conn.commit()
         return True
-    except sqlite3.IntegrityError:
+    except sqlite3.IntegrityError: # يتم تشغيله إذا كان المستخدم موجودًا بالفعل
         return False
     finally:
         conn.close()
@@ -69,7 +72,7 @@ def remove_authorized_user_from_db(user_id):
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
     cursor.execute('DELETE FROM authorized_users WHERE user_id = ?', (user_id,))
-    cursor.execute('DELETE FROM user_target_chats WHERE user_id = ?', (user_id,))
+    cursor.execute('DELETE FROM user_target_chats WHERE user_id = ?', (user_id,)) # إزالة الشاتات المستهدفة أيضًا
     rows_affected = cursor.rowcount
     conn.commit()
     conn.close()
@@ -117,6 +120,7 @@ def remove_user_target_chat_from_db(user_id, chat_id):
 
 init_db()
 
+# تحديث قائمة المستخدمين المصرح لهم بعد تهيئة DB
 AUTHORIZED_USER_IDS = get_authorized_users()
 
 print(f"تم تحميل {len(AUTHORIZED_USER_IDS)} مستخدم مصرح له من قاعدة البيانات.")
@@ -183,7 +187,7 @@ def handle_callback_query(call):
     user_id = call.from_user.id
     data = call.data
 
-    bot.answer_callback_query(call.id)
+    bot.answer_callback_query(call.id) # لإغلاق أيقونة التحميل على الزر
 
     if not is_authorized(user_id):
         bot.send_message(chat_id, "عذرًا، أنت غير مصرح لك باستخدام هذا البوت.")
@@ -196,9 +200,9 @@ def handle_callback_query(call):
             bot.edit_message_reply_markup(chat_id, call.message.message_id, reply_markup=get_main_keyboard(user_id))
         except telebot.apihelper.ApiTelegramException as e:
             if "message is not modified" in str(e):
-                pass
+                pass # لا تفعل شيئًا إذا لم تتغير لوحة المفاتيح
             else:
-                raise e
+                raise e # أعد طرح الخطأ إذا كان خطأ آخر
     
     elif data == "stop_share_mode":
         user_share_mode[user_id] = False
@@ -233,10 +237,12 @@ def handle_callback_query(call):
                 elif chat_info.type == 'channel':
                     message_text += f"- قناة: `{chat_info.title}` (ID: `{target_id}`)\n"
                 elif chat_info.type == 'private':
+                    # قد يحدث هذا إذا كان البوت في محادثة خاصة مع المستخدم وهو سجل ID محادثته الخاصة
                     message_text += f"- خاص مع: `{chat_info.first_name}` (ID: `{target_id}`)\n"
                 else:
                     message_text += f"- نوع غير معروف (ID: `{target_id}`)\n"
             except Exception as e:
+                # هذا يحدث إذا لم يتمكن البوت من الوصول للمجموعة/القناة (مثلاً تم إزالته منها)
                 message_text += f"- لا يمكن الوصول لـ ID: `{target_id}` (ربما تم إزالة البوت أو ليس مشرفًا)\n"
         
         bot.send_message(chat_id, message_text, parse_mode="Markdown")
@@ -247,7 +253,7 @@ def handle_callback_query(call):
             return
         
         global AUTHORIZED_USER_IDS
-        AUTHORIZED_USER_IDS = get_authorized_users()
+        AUTHORIZED_USER_IDS = get_authorized_users() # إعادة تحميل لضمان أحدث قائمة
 
         if not AUTHORIZED_USER_IDS:
             bot.send_message(chat_id, "لا يوجد مستخدمون مصرح لهم حاليًا.")
@@ -286,7 +292,7 @@ def add_user_by_admin(message):
     try:
         user_id_to_add = int(message.text.strip())
         if add_authorized_user_to_db(user_id_to_add):
-            AUTHORIZED_USER_IDS.append(user_id_to_add)
+            AUTHORIZED_USER_IDS.append(user_id_to_add) # إضافة للذاكرة مؤقتًا
             bot.send_message(message.chat.id, f"تمت إضافة المستخدم {user_id_to_add} بنجاح.")
             try:
                 bot.send_message(user_id_to_add, "تهانينا! لقد تم التصريح لك الآن باستخدام بوت الشير. أرسل لي /start.")
@@ -312,7 +318,7 @@ def remove_user_by_admin(message):
             bot.send_message(message.chat.id, "لا يمكنك إزالة نفسك من قائمة المشرفين.")
         elif remove_authorized_user_from_db(user_id_to_remove):
             if user_id_to_remove in AUTHORIZED_USER_IDS:
-                AUTHORIZED_USER_IDS.remove(user_id_to_remove)
+                AUTHORIZED_USER_IDS.remove(user_id_to_remove) # إزالة من الذاكرة مؤقتًا
             bot.send_message(message.chat.id, f"تمت إزالة المستخدم {user_id_to_remove} بنجاح.")
         else:
             bot.send_message(message.chat.id, f"المستخدم {user_id_to_remove} ليس في قائمة المصرح لهم أصلاً.")
@@ -328,7 +334,8 @@ def remove_chat_by_admin(message):
         return
     try:
         chat_id_to_remove = int(message.text.strip())
-        if remove_user_target_chat_from_db(message.from_user.id, chat_id_to_remove):
+        # يستخدم ID المشرف لأنه يستطيع حذف الشات من قوائم جميع المستخدمين
+        if remove_user_target_chat_from_db(message.from_user.id, chat_id_to_remove): 
             bot.send_message(message.chat.id, f"تمت إزالة الشات {chat_id_to_remove} بنجاح من جميع قوائم الشير.")
         else:
             bot.send_message(message.chat.id, f"الشات {chat_id_to_remove} غير موجود في أي قائمة شير مسجلة.")
@@ -338,6 +345,7 @@ def remove_chat_by_admin(message):
         bot.send_message(message.chat.id, "اختر من القائمة الرئيسية:", reply_markup=get_main_keyboard(message.from_user.id))
 
 # --- معالج الرسائل الأساسي (يقوم بالشير) ---
+# هذا المعالج سيتلقى جميع أنواع الرسائل عندما يكون وضع الشير مفعلاً
 @bot.message_handler(func=lambda message: user_share_mode.get(message.from_user.id, False), 
                      content_types=['text', 'photo', 'video', 'audio', 'document', 'voice', 'sticker', 'animation', 'contact', 'location', 'venue', 'game', 'video_note', 'poll', 'dice'])
 def forward_all_messages_to_user_chats(message):
@@ -361,15 +369,15 @@ def forward_all_messages_to_user_chats(message):
         try:
             bot.copy_message(target_chat_id, message.chat.id, message.message_id)
             successful_shares += 1
-            time.sleep(2)
+            time.sleep(2) # تأخير لتقليل احتمالية تجاوز حدود Telegram API
         except telebot.apihelper.ApiTelegramException as e:
-            if e.error_code == 403:
+            if e.error_code == 403: # البوت محظور أو تم إزالته
                 print(f"❌ خطأ 403: البوت محظور أو تم إزالته من الشات ID: {target_chat_id} (المستخدم {user_id} حاول الشير).")
                 bot.send_message(message.chat.id, f"❌ فشل الشير إلى {target_chat_id}: يبدو أن البوت محظور أو تم إزالته من هذه القناة/المجموعة. يرجى إعادة إضافته أو إلغاء حظره.")
                 failed_shares += 1
-                continue
+                continue # تخطي هذا الشات ومتابعة البقية
 
-            if e.error_code == 429:
+            if e.error_code == 429: # تجاوز حد الطلبات (Too Many Requests)
                 retry_after = e.result_json.get('parameters', {}).get('retry_after', 5)
                 print(f"⚠️ تجاوز حد الطلبات إلى {target_chat_id} للمستخدم {user_id}. سأنتظر {retry_after} ثوانٍ.")
                 bot.send_message(message.chat.id, f"⚠️ تم تجاوز حد الطلبات في Telegram. سأستأنف الشير بعد {retry_after} ثوانٍ.")
@@ -378,17 +386,17 @@ def forward_all_messages_to_user_chats(message):
                     bot.copy_message(target_chat_id, message.chat.id, message.message_id)
                     successful_shares += 1
                     time.sleep(2)
-                except Exception as retry_e:
+                except Exception as retry_e: # إذا فشلت المحاولة الثانية
                     failed_shares += 1
                     print(f"❌ فشل الشير مرة أخرى إلى {target_chat_id} للمستخدم {user_id} بعد الانتظار: {retry_e}")
                     if target_chat_id != message.chat.id: 
                         bot.send_message(message.chat.id, f"❌ فشل الشير إلى {target_chat_id} بعد إعادة المحاولة: يرجى التأكد من أن البوت مشرف في هذه القناة/المجموعة ولديه صلاحية النشر.\nالخطأ: {retry_e}")
-            else:
+            else: # أي أخطاء أخرى من Telegram API
                 failed_shares += 1
                 print(f"❌ فشل الشير إلى {target_chat_id} للمستخدم {user_id}: {e}")
                 if target_chat_id != message.chat.id: 
                     bot.send_message(message.chat.id, f"❌ فشل الشير إلى {target_chat_id}: يرجى التأكد من أن البوت مشرف في هذه القناة/المجموعة ولديه صلاحية النشر.\nالخطأ: {e}")
-        except Exception as e:
+        except Exception as e: # لأي أخطاء غير متوقعة
             failed_shares += 1
             print(f"❌ فشل الشير إلى {target_chat_id} للمستخدم {user_id}: {e}")
             if target_chat_id != message.chat.id: 
@@ -396,6 +404,7 @@ def forward_all_messages_to_user_chats(message):
 
     bot.send_message(message.chat.id, f"✅ تم الشير بنجاح! ({successful_shares} شير ناجح، {failed_shares} شير فاشل).")
     
+    # حفظ معلومات آخر رسالة تم مشاركتها
     if message.text:
         last_shared_message[user_id] = f"رسالة نصية: {message.text[:50]}..."
     elif message.photo:
@@ -404,11 +413,12 @@ def forward_all_messages_to_user_chats(message):
         last_shared_message[user_id] = f"فيديو (ID: {message.video.file_id})"
     elif message.document:
         last_shared_message[user_id] = f"ملف (الاسم: {message.document.file_name})"
-    else:
+    else: # لأنواع المحتوى الأخرى
         last_shared_message[user_id] = f"نوع آخر من المحتوى (ID: {message.message_id})"
 
 # --- معالج الرسائل من المستخدمين المصرح لهم عندما لا يكون وضع الشير مفعلًا ---
-@bot.message_handler(func=lambda message: not user_share_mode.get(message.from_user.id, False) and is_authorized(message.from_user.id), content_types=['text', 'photo', 'video', 'audio', 'document', 'voice', 'sticker', 'animation', 'contact', 'location', 'venue', 'game', 'video_note', 'poll', 'dice'])
+@bot.message_handler(func=lambda message: not user_share_mode.get(message.from_user.id, False) and is_authorized(message.from_user.id), 
+                     content_types=['text', 'photo', 'video', 'audio', 'document', 'voice', 'sticker', 'animation', 'contact', 'location', 'venue', 'game', 'video_note', 'poll', 'dice'])
 def handle_other_authorized_messages(message):
     bot.send_message(
         message.chat.id,
@@ -428,9 +438,9 @@ def handle_unauthorized_messages(message):
 @bot.message_handler(content_types=['new_chat_members'])
 def handle_new_chat_members(message):
     for member in message.new_chat_members:
-        if member.id == bot.get_me().id:
+        if member.id == bot.get_me().id: # إذا كان العضو الجديد هو البوت نفسه
             chat_id = message.chat.id
-            user_id = message.from_user.id 
+            user_id = message.from_user.id # الشخص الذي أضاف البوت
 
             if add_user_target_chat_to_db(user_id, chat_id):
                 print(f"✅ تم إضافة الشات الجديد (ID: {chat_id}, النوع: {message.chat.type}, الاسم: {message.chat.title or message.chat.first_name}) إلى قائمة الشير للمستخدم {user_id}.")
@@ -440,8 +450,10 @@ def handle_new_chat_members(message):
                     welcome_message += "⚠️ **ملاحظة هامة للقنوات:** لكي أتمكن من النشر هنا، يرجى التأكد من أنني مشرف في هذه القناة ولدي صلاحية 'نشر الرسائل'."
                 
                 try:
+                    # إرسال رسالة للشخص الذي أضاف البوت
                     bot.send_message(user_id, f"تم تسجيل هذه المجموعة/القناة (ID: {chat_id}, الاسم: {message.chat.title or message.chat.first_name}) لقائمة الشير الخاصة بك.")
-                    time.sleep(1)
+                    time.sleep(1) # تأخير بسيط
+                    # إرسال رسالة ترحيب في المجموعة/القناة الجديدة نفسها
                     bot.send_message(chat_id, welcome_message)
                 except telebot.apihelper.ApiTelegramException as e:
                     if e.error_code == 429:
@@ -471,9 +483,9 @@ def handle_new_chat_members(message):
                             print(f"❌ فشل إرسال رسالة التنبيه بعد الانتظار: {retry_e}")
                     else:
                         print(f"❌ فشل إرسال رسالة التنبيه عند إضافة البوت لشات جديد: {e}")
-            break
+            break # الخروج من الحلقة بعد معالجة إضافة البوت
 
 # --- بدء تشغيل البوت ---
 print("البوت يعمل الآن...")
-# هذه الدالة تبقي البوت قيد التشغيل وتستقبل التحديثات
+# هذه الدالة تبقي البوت قيد التشغيل وتستقبل التحديثات من Telegram API
 bot.polling(non_stop=True, interval=5)
