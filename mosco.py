@@ -178,7 +178,18 @@ def send_welcome(message):
     if not is_authorized(user_id):
         markup = telebot.types.InlineKeyboardMarkup()
         markup.add(telebot.types.InlineKeyboardButton("تواصل مع المالك", url="https://t.me/Mo_sc_ow")) 
-        bot.send_message(user_chat_id, "عذرًا، أنت غير مصرح لك باستخدام هذا البوت. هذا البوت خاص. إذا كنت ترغب في استخدامه، يرجى التواصل مع المالك. MOSCO", reply_markup=markup)
+        bot.send_message(user_chat_id, text=(
+                "🔥 *مرحباً بك* 🔥\n\n"
+                f"👋 مرحباً يا [{user_name}](tg://user?id={user_id})\n\n"
+                "🚫 *هذا البوت خاص وغير مصرح لك باستخدامه.*\n"
+                "إذا كنت ترغب في الوصول، يرجى التواصل مع المالك.\n\n"
+                "🕵️‍♂️ *محتوى البوت:*\n"
+                "1️⃣ دياثة وتجسس على المحارم - عربي وبدويات 🔥🥵\n"
+                "2️⃣ تحرش وجيران واغتصاب حقيقي 🥴🥵\n\n"
+                "🎉 بوت حفلات دياثة سوالب 🌶️\n\n"
+                "👨‍💻 *المطور:* @Mo_sc_ow\n"
+                "📢 *القناة:* @Vib_one"
+            ), reply_markup=markup)
         return
 
     user_first_name = message.from_user.first_name if message.from_user.first_name else "صديقي"
