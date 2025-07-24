@@ -168,6 +168,8 @@ def send_welcome(message):
     
     user_chat_id = message.chat.id 
     user_id = message.from_user.id
+    # Get user's first name, defaulting to "صديقي" if not available
+    user_first_name = message.from_user.first_name if message.from_user.first_name else "صديقي"
 
     # Add the user's private chat with the bot to their target chats
     if add_user_target_chat_to_db(user_id, user_chat_id):
@@ -178,11 +180,24 @@ def send_welcome(message):
     if not is_authorized(user_id):
         markup = telebot.types.InlineKeyboardMarkup()
         markup.add(telebot.types.InlineKeyboardButton("تواصل مع المالك", url="https://t.me/Mo_sc_ow")) 
-        bot.send_message(user_chat_id, "مرحباً بك 🔥\n\n مرحباً بك يا {user_first_name} 👋\n\n 1- دياثة وتجسس محارم عربي وبدويات 🔥🥵\n\n2- تحرش وتجسس جيران اغتصاب حقيقي🥴🥵\n\nبـوت حــفـلات ديـاثة سوالــب🥵🌶️\n\n🌟 مرحباً بك في بوت الشير المتطور! 🌟\n\n لا يمكنك استخدام هذا البوت عليك الرجوع الي المالك \n\n MoScCo\n\n✨ Developer: @Mo_sc_ow\n\n 📢 Channal : @Vib_one", reply_markup=markup)
+        
+        # Use an f-string to include the user's first name
+        unauthorized_welcome_text = (
+            "مرحباً بك 🔥\n\n"
+            f"مرحباً بك يا {user_first_name} 👋\n\n"
+            "1- دياثة وتجسس محارم عربي وبدويات 🔥🥵\n\n"
+            "2- تحرش وتجسس جيران اغتصاب حقيقي🥴🥵\n\n"
+            "بـوت حــفـلات ديـاثة سوالــب🥵🌶️\n\n"
+            "🌟 مرحباً بك في بوت الشير المتطور! 🌟\n\n"
+            " لا يمكنك استخدام هذا البوت عليك الرجوع الي المالك \n\n"
+            " MoScCo\n\n"
+            "✨ Developer: @Mo_sc_ow\n\n"
+            " 📢 Channal : @Vib_one"
+        )
+        bot.send_message(user_chat_id, unauthorized_welcome_text, reply_markup=markup)
         return
 
-    user_first_name = message.from_user.first_name if message.from_user.first_name else "صديقي"
-    
+    # Authorized user welcome message
     welcome_text = (
         "مرحباً بك 🔥\n\n"
         f"مرحباً بك يا {user_first_name} 👋\n\n"
@@ -268,7 +283,7 @@ def handle_callback_query(call):
                 if e.error_code == 400 and "chat not found" in e.description.lower():
                     message_text += f"- لا يمكن الوصول لـ ID: `{target_id}` (معرف غير صالح أو البوت غير موجود به)\n"
                 elif e.error_code == 403: # Bot was blocked or removed from chat/channel
-                     message_text += f"- لا يمكن الوصول لـ ID: `{target_id}` (البوت محظور أو تم إزالته)\n"
+                    message_text += f"- لا يمكن الوصول لـ ID: `{target_id}` (البوت محظور أو تم إزالته)\n"
                 else:
                     message_text += f"- لا يمكن الوصول لـ ID: `{target_id}` (خطأ غير معروف: {e.description})\n"
                 print(f"خطأ في جلب معلومات الشات {target_id}: {e}") # Log the full error
@@ -352,7 +367,7 @@ def remove_user_by_admin(message):
         elif remove_authorized_user_from_db(user_id_to_remove):
             if user_id_to_remove in AUTHORIZED_USER_IDS:
                 AUTHORIZED_USER_IDS.remove(user_id_to_remove) # Temporarily remove from in-memory list
-            bot.send_message(message.chat.id, f"تمت إزالة المستخدم {user_id_to_add} بنجاح.") # Changed user_id_to_add to user_id_to_remove
+            bot.send_message(message.chat.id, f"تمت إزالة المستخدم {user_id_to_remove} بنجاح.") # Changed user_id_to_add to user_id_to_remove
         else:
             bot.send_message(message.chat.id, f"المستخدم {user_id_to_remove} ليس في قائمة المصرح لهم أصلاً.")
 
@@ -443,7 +458,7 @@ def forward_all_messages_to_user_chats(message):
             print(f"{error_message_for_user} (كود الخطأ: {e.error_code})")
             # Only send error message to user if the target chat is not the same as the source chat
             if target_chat_id != message.chat.id: 
-                 bot.send_message(message.chat.id, error_message_for_user)
+                    bot.send_message(message.chat.id, error_message_for_user)
         except Exception as e: # Catch any other unexpected general errors
             failed_shares += 1
             print(f"❌ فشل الشير إلى {target_chat_id} للمستخدم {user_id} بسبب خطأ عام: {e}")
