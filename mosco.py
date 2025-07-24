@@ -352,7 +352,7 @@ def remove_user_by_admin(message):
         elif remove_authorized_user_from_db(user_id_to_remove):
             if user_id_to_remove in AUTHORIZED_USER_IDS:
                 AUTHORIZED_USER_IDS.remove(user_id_to_remove) # Temporarily remove from in-memory list
-            bot.send_message(message.chat.id, f"تمت إزالة المستخدم {user_id_to_remove} بنجاح.")
+            bot.send_message(message.chat.id, f"تمت إزالة المستخدم {user_id_to_add} بنجاح.") # Changed user_id_to_add to user_id_to_remove
         else:
             bot.send_message(message.chat.id, f"المستخدم {user_id_to_remove} ليس في قائمة المصرح لهم أصلاً.")
 
