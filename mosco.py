@@ -1,15 +1,22 @@
 import telebot
 import time
 import json
-import os
+import os # تم إضافة هذه المكتبة لتحميل متغيرات البيئة
 import sqlite3
 
 # --- إعدادات البوت الأساسية (يجب تعديلها) ---
-BOT_TOKEN = '8131458097:AAF1M0dZJ3LD8OUWswziz2lvHOWW1k1F47o'
-ADMIN_USER_ID = 7602163093  # هذا هو معرّف المالك
+# تم تغيير اسم متغير البيئة هنا إلى MOSCO_TOKEN
+MOSCO_TOKEN = os.getenv('MOSCO_TOKEN')
+if not MOSCO_TOKEN:
+    print("خطأ: متغير البيئة 'MOSCO_TOKEN' غير موجود. يرجى تعيينه في Railway.")
+    exit() # إيقاف التشغيل إذا لم يكن التوكن موجودًا
+
+# استخدام MOSCO_TOKEN عند إنشاء كائن البوت
+bot = telebot.TeleBot(MOSCO_TOKEN)
+
+ADMIN_USER_ID = 7602163093  # هذا هو معرّف المالك
 DATABASE_NAME = 'bot_data.db'
 
-bot = telebot.TeleBot(BOT_TOKEN)
 
 user_share_mode = {}
 last_shared_message = {}
@@ -73,8 +80,10 @@ def get_user_target_chats(user_id):
     cursor = conn.cursor()
     
     if is_admin(user_id):
+        # المسؤول يمكنه الشير في جميع الشاتات المسجلة من قبل أي مستخدم
         cursor.execute('SELECT DISTINCT chat_id FROM user_target_chats')
     else:
+        # المستخدم العادي يشير فقط في الشاتات الخاصة به
         cursor.execute('SELECT chat_id FROM user_target_chats WHERE user_id = ?', (user_id,))
     
     chats = [row[0] for row in cursor.fetchall()]
@@ -95,8 +104,10 @@ def remove_user_target_chat_from_db(user_id, chat_id):
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
     if is_admin(user_id):
+        # المسؤول يمكنه حذف الشات من قوائم جميع المستخدمين
         cursor.execute('DELETE FROM user_target_chats WHERE chat_id = ?', (chat_id,))
     else:
+        # المستخدم العادي يمكنه حذف الشات من قائمته فقط
         cursor.execute('DELETE FROM user_target_chats WHERE user_id = ? AND chat_id = ?', (user_id, chat_id))
     
     rows_affected = cursor.rowcount
@@ -143,7 +154,6 @@ def send_welcome(message):
     if not is_authorized(message.from_user.id):
         # هذا هو الجزء الذي يضيف زر التواصل مع المالك
         markup = telebot.types.InlineKeyboardMarkup()
-        # ***** التعديل هنا: استخدام اليوزرنيم بدلاً من الـ ID *****
         # تأكد من أن 'Mo_sc_ow' هو اسم المستخدم (اليوزرنيم) الخاص بك بالضبط في تيليجرام (بدون علامة @)
         markup.add(telebot.types.InlineKeyboardButton("تواصل مع المالك", url="https://t.me/Mo_sc_ow")) 
         bot.send_message(message.chat.id, "عذرًا، أنت غير مصرح لك باستخدام هذا البوت. هذا البوت خاص. إذا كنت ترغب في استخدامه، يرجى التواصل مع المالك.", reply_markup=markup)
@@ -329,7 +339,7 @@ def remove_chat_by_admin(message):
 
 # --- معالج الرسائل الأساسي (يقوم بالشير) ---
 @bot.message_handler(func=lambda message: user_share_mode.get(message.from_user.id, False), 
-                      content_types=['text', 'photo', 'video', 'audio', 'document', 'voice', 'sticker', 'animation', 'contact', 'location', 'venue', 'game', 'video_note', 'poll', 'dice'])
+                     content_types=['text', 'photo', 'video', 'audio', 'document', 'voice', 'sticker', 'animation', 'contact', 'location', 'venue', 'game', 'video_note', 'poll', 'dice'])
 def forward_all_messages_to_user_chats(message):
     user_id = message.from_user.id
     if not is_authorized(user_id):
@@ -410,7 +420,6 @@ def handle_other_authorized_messages(message):
 @bot.message_handler(func=lambda message: not is_authorized(message.from_user.id))
 def handle_unauthorized_messages(message):
     markup = telebot.types.InlineKeyboardMarkup()
-    # ***** التعديل هنا: استخدام اليوزرنيم بدلاً من الـ ID *****
     # تأكد من أن 'Mo_sc_ow' هو اسم المستخدم (اليوزرنيم) الخاص بك بالضبط في تيليجرام (بدون علامة @)
     markup.add(telebot.types.InlineKeyboardButton("تواصل مع المالك", url="https://t.me/Mo_sc_ow")) 
     bot.send_message(message.chat.id, "عذرًا، أنت غير مصرح لك باستخدام هذا البوت. هذا البوت خاص. إذا كنت ترغب في استخدامه، يرجى التواصل مع المالك.", reply_markup=markup)
@@ -466,4 +475,5 @@ def handle_new_chat_members(message):
 
 # --- بدء تشغيل البوت ---
 print("البوت يعمل الآن...")
+# هذه الدالة تبقي البوت قيد التشغيل وتستقبل التحديثات
 bot.polling(non_stop=True, interval=5)
