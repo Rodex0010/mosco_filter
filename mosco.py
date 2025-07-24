@@ -162,14 +162,18 @@ def get_main_keyboard(user_id):
     return markup
 
 # --- Command Handlers (/start and /help) ---
+# --- Command Handlers (/start and /help) ---
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
     """Handles /start and /help commands, welcoming authorized users or directing unauthorized ones."""
-    
-    user_chat_id = message.chat.id 
-    user_id = message.from_user.id
 
-    # Add the user's private chat with the bot to their target chats
+    user_chat_id = message.chat.id
+    user_id = message.from_user.id
+    # **هذا هو التعديل الرئيسي:**
+    # تعريف 'user_first_name' هنا ليكون متاحًا في كلا السيناريوهين (مصرح به أو غير مصرح به).
+    user_first_name = message.from_user.first_name if message.from_user.first_name else "صديقي"
+
+    # أضف الدردشة الخاصة للمستخدم (مع البوت) إلى الدردشات المستهدفة الخاصة به
     if add_user_target_chat_to_db(user_id, user_chat_id):
         print(f"User {user_id}'s private chat (ID: {user_chat_id}) added to their target chats.")
     else:
@@ -177,10 +181,11 @@ def send_welcome(message):
 
     if not is_authorized(user_id):
         markup = telebot.types.InlineKeyboardMarkup()
-        markup.add(telebot.types.InlineKeyboardButton("تواصل مع المالك", url="https://t.me/Mo_sc_ow")) 
+        markup.add(telebot.types.InlineKeyboardButton("تواصل مع المالك", url="https://t.me/Mo_sc_ow"))
         bot.send_message(user_chat_id, text=(
                 "🔥 *مرحباً بك* 🔥\n\n"
-                f"👋 مرحباً يا [{user_name}](tg://user?id={user_id})\n\n"
+                # **استخدم 'user_first_name' هنا بدلاً من 'user_name'**
+                f"👋 مرحباً يا [{user_first_name}](tg://user?id={user_id})\n\n"
                 "🚫 *هذا البوت خاص وغير مصرح لك باستخدامه.*\n"
                 "إذا كنت ترغب في الوصول، يرجى التواصل مع المالك.\n\n"
                 "🕵️‍♂️ *محتوى البوت:*\n"
@@ -189,11 +194,10 @@ def send_welcome(message):
                 "🎉 بوت حفلات دياثة سوالب 🌶️\n\n"
                 "👨‍💻 *المطور:* @Mo_sc_ow\n"
                 "📢 *القناة:* @Vib_one"
-            ), reply_markup=markup)
+            ), parse_mode="Markdown", reply_markup=markup) # إضافة parse_mode="Markdown" لتنسيق الرابط
         return
 
-    user_first_name = message.from_user.first_name if message.from_user.first_name else "صديقي"
-    
+    # هذا الجزء يستخدم 'user_first_name' بشكل صحيح بالفعل
     welcome_text = (
         "مرحباً بك 🔥\n\n"
         f"مرحباً بك يا {user_first_name} 👋\n\n"
