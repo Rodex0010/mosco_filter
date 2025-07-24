@@ -21,7 +21,7 @@ DATABASE_NAME = 'bot_data.db'
 # --- Configuration for Photo in Welcome Message ---
 # Replace 'YOUR_PHOTO_FILE_ID_HERE' with the actual File ID of your image
 # You can get the File ID by sending the photo to @RawDataBot or your own bot
-WELCOME_PHOTO_FILE_ID = 'AgACAgQAAxkBAAE4V_RogfNfc0QYoXyOmJx9HW_J94PTdQACOskxGwlyEVBLoNgx9z96zQEAAwIAA3gAAzYE'
+WELCOME_PHOTO_FILE_ID = 'AgACAgQAAxkBAAE4WBRogfXQhx47nGjbCpJlSZii9LAZLwACH8kxG1uDEFDH6q_3Zif1lAEAAwIAA3gAAzYE' # <--- تم التحديث هنا
 
 # In-memory dictionaries to track user states
 user_share_mode = {}
@@ -528,7 +528,32 @@ def handle_unauthorized_messages(message):
     """Informs unauthorized users that they cannot use the bot and provides contact info."""
     markup = telebot.types.InlineKeyboardMarkup()
     markup.add(telebot.types.InlineKeyboardButton("تواصل مع المالك", url="https://t.me/Mo_sc_ow")) 
-    bot.send_message(message.chat.id, "عذرًا، أنت غير مصرح لك باستخدام هذا البوت. هذا البوت خاص. إذا كنت ترغب في استخدامه، يرجى التواصل مع المالك. MOSCO", reply_markup=markup)
+    
+    # Get user's first name for the welcome message
+    user_first_name = message.from_user.first_name if message.from_user.first_name else "صديقي"
+
+    unauthorized_welcome_caption = (
+        "مرحباً بك 🔥\n\n"
+        f"مرحباً بك يا {user_first_name} 👋\n\n"
+        "1- دياثة وتجسس محارم عربي وبدويات 🔥🥵\n\n"
+        "2- تحرش وتجسس جيران اغتصاب حقيقي🥴🥵\n\n"
+        "بـوت حــفـلات ديـاثة سوالــب🥵🌶️\n\n"
+        "🌟 مرحباً بك في بوت الشير المتطور! 🌟\n\n"
+        " لا يمكنك استخدام هذا البوت عليك الرجوع الي المالك \n\n"
+        " MoScCo\n\n"
+        "✨ Developer: @Mo_sc_ow\n\n"
+        " 📢 Channal : @Vib_one"
+    )
+
+    if WELCOME_PHOTO_FILE_ID:
+        try:
+            bot.send_photo(message.chat.id, WELCOME_PHOTO_FILE_ID, caption=unauthorized_welcome_caption, reply_markup=markup)
+        except Exception as e:
+            print(f"Error sending unauthorized welcome photo: {e}")
+            bot.send_message(message.chat.id, unauthorized_welcome_caption, reply_markup=markup)
+    else:
+        bot.send_message(message.chat.id, unauthorized_welcome_caption, reply_markup=markup)
+
 
 # --- Handler when the Bot is Added to a New Group/Channel ---
 @bot.message_handler(content_types=['new_chat_members'])
