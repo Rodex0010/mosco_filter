@@ -268,7 +268,7 @@ def handle_callback_query(call):
                 if e.error_code == 400 and "chat not found" in e.description.lower():
                     message_text += f"- لا يمكن الوصول لـ ID: `{target_id}` (معرف غير صالح أو البوت غير موجود به)\n"
                 elif e.error_code == 403: # Bot was blocked or removed from chat/channel
-                     message_text += f"- لا يمكن الوصول لـ ID: `{target_id}` (البوت محظور أو تم إزالته)\n"
+                    message_text += f"- لا يمكن الوصول لـ ID: `{target_id}` (البوت محظور أو تم إزالته)\n"
                 else:
                     message_text += f"- لا يمكن الوصول لـ ID: `{target_id}` (خطأ غير معروف: {e.description})\n"
                 print(f"خطأ في جلب معلومات الشات {target_id}: {e}") # Log the full error
@@ -352,7 +352,7 @@ def remove_user_by_admin(message):
         elif remove_authorized_user_from_db(user_id_to_remove):
             if user_id_to_remove in AUTHORIZED_USER_IDS:
                 AUTHORIZED_USER_IDS.remove(user_id_to_remove) # Temporarily remove from in-memory list
-            bot.send_message(message.chat.id, f"تمت إزالة المستخدم {user_id_to_add} بنجاح.") # Changed user_id_to_add to user_id_to_remove
+            bot.send_message(message.chat.id, f"تمت إزالة المستخدم {user_id_to_remove} بنجاح.") # Corrected variable name
         else:
             bot.send_message(message.chat.id, f"المستخدم {user_id_to_remove} ليس في قائمة المصرح لهم أصلاً.")
 
@@ -369,6 +369,7 @@ def remove_chat_by_admin(message):
     try:
         chat_id_to_remove = int(message.text.strip())
         # Admin's user ID is used here because they can remove the chat from all users' lists
+        # The function `remove_user_target_chat_from_db` already handles admin's ability to remove for all users.
         if remove_user_target_chat_from_db(message.from_user.id, chat_id_to_remove): 
             bot.send_message(message.chat.id, f"تمت إزالة الشات {chat_id_to_remove} بنجاح من جميع قوائم الشير.")
         else:
@@ -406,8 +407,8 @@ def forward_all_messages_to_user_chats(message):
             successful_shares += 1
             time.sleep(2) # Delay to reduce the chance of hitting Telegram API limits
         except telebot.apihelper.ApiTelegramException as e:
-            failed_shares += 1 # Increment failed count before detailed error handling
-            error_message_for_user = f"❌ فشل الشير إلى {target_chat_id}: "
+            failed_shares += 1 
+            error_message_for_user = f"❌ فشل الشير إلى `{target_chat_id}`: " # Added backticks for chat ID
             
             # Detailed error handling based on Telegram API error codes
             if e.error_code == 400: # Bad Request
@@ -419,10 +420,14 @@ def forward_all_messages_to_user_chats(message):
                     error_message_for_user += "البوت ليس لديه صلاحية النشر في هذه القناة/المجموعة. (اجعله مشرفًا)."
                 elif "chat not found" in e.description.lower():
                     error_message_for_user += "لم يتم العثور على الشات. (ID خاطئ أو تم حذف الشات)."
-                else:
-                    error_message_for_user += f"خطأ في الطلب (Bad Request): {e.description}"
+                    # Automatically remove the chat from the user's list if not found
+                    if remove_user_target_chat_from_db(user_id, target_chat_id):
+                        error_message_for_user += " تم إزالة الشات تلقائيًا من قائمة الشير الخاصة بك."
             elif e.error_code == 403: # Forbidden
                 error_message_for_user += "البوت محظور أو تم إزالته من هذه القناة/المجموعة. يرجى إعادة إضافته أو إلغاء حظره."
+                # Automatically remove the chat from the user's list if forbidden
+                if remove_user_target_chat_from_db(user_id, target_chat_id):
+                    error_message_for_user += " تم إزالة الشات تلقائيًا من قائمة الشير الخاصة بك بسبب طرد البوت."
             elif e.error_code == 429: # Too Many Requests
                 retry_after = e.result_json.get('parameters', {}).get('retry_after', 5)
                 print(f"⚠️ تجاوز حد الطلبات إلى {target_chat_id} للمستخدم {user_id}. سأنتظر {retry_after} ثوانٍ.")
@@ -443,12 +448,12 @@ def forward_all_messages_to_user_chats(message):
             print(f"{error_message_for_user} (كود الخطأ: {e.error_code})")
             # Only send error message to user if the target chat is not the same as the source chat
             if target_chat_id != message.chat.id: 
-                 bot.send_message(message.chat.id, error_message_for_user)
+                    bot.send_message(message.chat.id, error_message_for_user, parse_mode="Markdown") # Added parse_mode
         except Exception as e: # Catch any other unexpected general errors
             failed_shares += 1
             print(f"❌ فشل الشير إلى {target_chat_id} للمستخدم {user_id} بسبب خطأ عام: {e}")
             if target_chat_id != message.chat.id:
-                bot.send_message(message.chat.id, f"❌ فشل الشير إلى {target_chat_id} بسبب خطأ عام: {e}")
+                bot.send_message(message.chat.id, f"❌ فشل الشير إلى `{target_chat_id}` بسبب خطأ عام: {e}", parse_mode="Markdown") # Added backticks and parse_mode
 
     bot.send_message(message.chat.id, f"✅ تم الشير بنجاح! ({successful_shares} شير ناجح، {failed_shares} شير فاشل).")
     
