@@ -5,7 +5,7 @@ import os
 import sqlite3
 
 # --- إعدادات البوت الأساسية (يجب تعديلها) ---
-BOT_TOKEN = '8131458097:AAF0Hv63PmXuCQgcyhbgxFEly3WLCHKqhQA'
+BOT_TOKEN = '8131458097:AAF1M0dZJ3LD8OUWswziz2lvHOWW1k1F47o'
 ADMIN_USER_ID = 7602163093  # هذا هو معرّف المالك
 DATABASE_NAME = 'bot_data.db'
 
