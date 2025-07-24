@@ -176,26 +176,27 @@ def send_welcome(message):
         print(f"User  {user_id}'s private chat (ID: {user_chat_id}) already in their target chats.")
 
     if not is_authorized(user_id):
-        markup = telebot.types.InlineKeyboardMarkup()
-        markup.add(telebot.types.InlineKeyboardButton("تواصل مع المالك", url="https://t.me/Mo_sc_ow")) 
-        bot.send_message(
-            user_chat_id,
-            (
-                "🔥 مرحباً بك يا {user_first_name} 👋\n\n"
-                "💥 *قائمة المحتوى:* \n"
-                "1️⃣ دياثة وتجسس على المحارم - عربي وبدويات 🥵\n"
-                "2️⃣ تحرش وجيران - اغتصاب حقيقي 🥴🥵\n\n"
-                "🎉 بوت حفلات دياثة وسوالب 🔥🌶️\n\n"
-                "🚫 *أنت غير مصرح لك باستخدام هذا البوت.*\n"
-                "هذا البوت *خاص* ومتاح فقط لمستخدمين محددين.\n"
-                "للتواصل وطلب الوصول، راسل المالك 👇\n\n"
-                "👨‍💻 *Developer:* @Mo_sc_ow\n"
-                "📢 *Channel:* @Vib_one"
-            ).format(user_first_name=message.from_user.first_name or "صديقي"),
-            reply_markup=markup,
-            parse_mode="MarkdownV2"
-        )
-        return
+    markup = telebot.types.InlineKeyboardMarkup()
+    markup.add(telebot.types.InlineKeyboardButton("تواصل مع المالك", url="https://t.me/Mo_sc_ow")) 
+    bot.send_message(
+        user_chat_id,
+        (
+            f"🔥 <b>مرحباً بك يا {message.from_user.first_name or 'صديقي'} 👋</b>\n\n"
+            "💥 <u>قائمة المحتوى:</u>\n"
+            "1️⃣ دياثة وتجسس على المحارم - عربي وبدويات 🥵\n"
+            "2️⃣ تحرش وجيران - اغتصاب حقيقي 🥴🥵\n\n"
+            "🎉 بوت حفلات دياثة وسوالب 🔥🌶️\n\n"
+            "🚫 <b>أنت غير مصرح لك باستخدام هذا البوت.</b>\n"
+            "هذا البوت <i>خاص</i> ومتاح فقط لمستخدمين محددين.\n"
+            "إذا كنت مهتماً، تواصل مع المطور 👇\n\n"
+            "👨‍💻 <b>المطور:</b> <a href='https://t.me/Mo_sc_ow'>@Mo_sc_ow</a>\n"
+            "📢 <b>القناة:</b> <a href='https://t.me/Vib_one'>@Vib_one</a>"
+        ),
+        reply_markup=markup,
+        parse_mode="HTML"
+    )
+    return
+
 
     user_first_name = message.from_user.first_name if message.from_user.first_name else "صديقي"
     
