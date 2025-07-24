@@ -2,5 +2,5 @@
   "build": {
     "builder": "NIXPACKS"
   },
-  "start": "python اسم_ملف_البوت.py"
+  "start": "python main.py"
 }
