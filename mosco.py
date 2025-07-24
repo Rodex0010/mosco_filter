@@ -18,6 +18,11 @@ bot = telebot.TeleBot(MOSCO_TOKEN)
 ADMIN_USER_ID = 7602163093 # You should replace this with your actual Telegram User ID
 DATABASE_NAME = 'bot_data.db'
 
+# --- Configuration for Photo in Welcome Message ---
+# Replace 'YOUR_PHOTO_FILE_ID_HERE' with the actual File ID of your image
+# You can get the File ID by sending the photo to @RawDataBot or your own bot
+WELCOME_PHOTO_FILE_ID = 'AgACAgQAAxkBAAE4V_RogfNfc0QYoXyOmJx9HW_J94PTdQACOskxGwlyEVBLoNgx9z96zQEAAwIAA3gAAzYE'
+
 # In-memory dictionaries to track user states
 user_share_mode = {}
 last_shared_message = {}
@@ -181,8 +186,8 @@ def send_welcome(message):
         markup = telebot.types.InlineKeyboardMarkup()
         markup.add(telebot.types.InlineKeyboardButton("تواصل مع المالك", url="https://t.me/Mo_sc_ow")) 
         
-        # Use an f-string to include the user's first name
-        unauthorized_welcome_text = (
+        # Use an f-string to include the user's first name in the caption
+        unauthorized_welcome_caption = (
             "مرحباً بك 🔥\n\n"
             f"مرحباً بك يا {user_first_name} 👋\n\n"
             "1- دياثة وتجسس محارم عربي وبدويات 🔥🥵\n\n"
@@ -194,11 +199,20 @@ def send_welcome(message):
             "✨ Developer: @Mo_sc_ow\n\n"
             " 📢 Channal : @Vib_one"
         )
-        bot.send_message(user_chat_id, unauthorized_welcome_text, reply_markup=markup)
+        # Send photo with caption for unauthorized users
+        if WELCOME_PHOTO_FILE_ID: # Check if a file ID is provided
+            try:
+                bot.send_photo(user_chat_id, WELCOME_PHOTO_FILE_ID, caption=unauthorized_welcome_caption, reply_markup=markup)
+            except Exception as e:
+                print(f"Error sending welcome photo for unauthorized user: {e}")
+                # Fallback to sending text message if photo fails
+                bot.send_message(user_chat_id, unauthorized_welcome_caption, reply_markup=markup)
+        else:
+            bot.send_message(user_chat_id, unauthorized_welcome_caption, reply_markup=markup)
         return
 
-    # Authorized user welcome message
-    welcome_text = (
+    # Authorized user welcome message (can also be a photo with caption if you prefer)
+    welcome_caption = (
         "مرحباً بك 🔥\n\n"
         f"مرحباً بك يا {user_first_name} 👋\n\n"
         "1- دياثة وتجسس محارم عربي وبدويات 🔥🥵\n"
@@ -211,11 +225,29 @@ def send_welcome(message):
         "📢 Channal : @Vib_one"
     )
 
-    bot.send_message(
-        user_chat_id,
-        welcome_text,
-        reply_markup=get_main_keyboard(user_id)
-    )
+    # Send photo with caption for authorized users
+    if WELCOME_PHOTO_FILE_ID: # Check if a file ID is provided
+        try:
+            bot.send_photo(
+                user_chat_id,
+                WELCOME_PHOTO_FILE_ID,
+                caption=welcome_caption,
+                reply_markup=get_main_keyboard(user_id)
+            )
+        except Exception as e:
+            print(f"Error sending welcome photo for authorized user: {e}")
+            # Fallback to sending text message if photo fails
+            bot.send_message(
+                user_chat_id,
+                welcome_caption,
+                reply_markup=get_main_keyboard(user_id)
+            )
+    else:
+        bot.send_message(
+            user_chat_id,
+            welcome_caption,
+            reply_markup=get_main_keyboard(user_id)
+        )
 
 # --- Callback Query Handler (Button Presses) ---
 @bot.callback_query_handler(func=lambda call: True)
