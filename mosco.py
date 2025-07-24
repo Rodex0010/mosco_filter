@@ -18,11 +18,6 @@ bot = telebot.TeleBot(MOSCO_TOKEN)
 ADMIN_USER_ID = 7602163093 # You should replace this with your actual Telegram User ID
 DATABASE_NAME = 'bot_data.db'
 
-# --- Configuration for Photo in Welcome Message ---
-# Replace 'YOUR_PHOTO_FILE_ID_HERE' with the actual File ID of your image
-# You can get the File ID by sending the photo to @RawDataBot or your own bot
-WELCOME_PHOTO_FILE_ID = 'AgACAgQAAxkBAAE4WBRogfXQhx47nGjbCpJlSZii9LAZLwACH8kxG1uDEFDH6q_3Zif1lAEAAwIAA3gAAzYE' # <--- تم التحديث هنا
-
 # In-memory dictionaries to track user states
 user_share_mode = {}
 last_shared_message = {}
@@ -173,8 +168,6 @@ def send_welcome(message):
     
     user_chat_id = message.chat.id 
     user_id = message.from_user.id
-    # Get user's first name, defaulting to "صديقي" if not available
-    user_first_name = message.from_user.first_name if message.from_user.first_name else "صديقي"
 
     # Add the user's private chat with the bot to their target chats
     if add_user_target_chat_to_db(user_id, user_chat_id):
@@ -185,34 +178,12 @@ def send_welcome(message):
     if not is_authorized(user_id):
         markup = telebot.types.InlineKeyboardMarkup()
         markup.add(telebot.types.InlineKeyboardButton("تواصل مع المالك", url="https://t.me/Mo_sc_ow")) 
-        
-        # Use an f-string to include the user's first name in the caption
-        unauthorized_welcome_caption = (
-            "مرحباً بك 🔥\n\n"
-            f"مرحباً بك يا {user_first_name} 👋\n\n"
-            "1- دياثة وتجسس محارم عربي وبدويات 🔥🥵\n\n"
-            "2- تحرش وتجسس جيران اغتصاب حقيقي🥴🥵\n\n"
-            "بـوت حــفـلات ديـاثة سوالــب🥵🌶️\n\n"
-            "🌟 مرحباً بك في بوت الشير المتطور! 🌟\n\n"
-            " لا يمكنك استخدام هذا البوت عليك الرجوع الي المالك \n\n"
-            " MoScCo\n\n"
-            "✨ Developer: @Mo_sc_ow\n\n"
-            " 📢 Channal : @Vib_one"
-        )
-        # Send photo with caption for unauthorized users
-        if WELCOME_PHOTO_FILE_ID: # Check if a file ID is provided
-            try:
-                bot.send_photo(user_chat_id, WELCOME_PHOTO_FILE_ID, caption=unauthorized_welcome_caption, reply_markup=markup)
-            except Exception as e:
-                print(f"Error sending welcome photo for unauthorized user: {e}")
-                # Fallback to sending text message if photo fails
-                bot.send_message(user_chat_id, unauthorized_welcome_caption, reply_markup=markup)
-        else:
-            bot.send_message(user_chat_id, unauthorized_welcome_caption, reply_markup=markup)
+        bot.send_message(user_chat_id, "مرحباً بك 🔥\n\n مرحباً بك يا {user_first_name} 👋\n\n 1- دياثة وتجسس محارم عربي وبدويات 🔥🥵\n\n2- تحرش وتجسس جيران اغتصاب حقيقي🥴🥵\n\nبـوت حــفـلات ديـاثة سوالــب🥵🌶️\n\n🌟 مرحباً بك في بوت الشير المتطور! 🌟\n\n لا يمكنك استخدام هذا البوت عليك الرجوع الي المالك \n\n\n✨ Developer: @Mo_sc_ow\n\n 📢 Channal : @Vib_one", reply_markup=markup)
         return
 
-    # Authorized user welcome message (can also be a photo with caption if you prefer)
-    welcome_caption = (
+    user_first_name = message.from_user.first_name if message.from_user.first_name else "صديقي"
+    
+    welcome_text = (
         "مرحباً بك 🔥\n\n"
         f"مرحباً بك يا {user_first_name} 👋\n\n"
         "1- دياثة وتجسس محارم عربي وبدويات 🔥🥵\n"
@@ -225,29 +196,11 @@ def send_welcome(message):
         "📢 Channal : @Vib_one"
     )
 
-    # Send photo with caption for authorized users
-    if WELCOME_PHOTO_FILE_ID: # Check if a file ID is provided
-        try:
-            bot.send_photo(
-                user_chat_id,
-                WELCOME_PHOTO_FILE_ID,
-                caption=welcome_caption,
-                reply_markup=get_main_keyboard(user_id)
-            )
-        except Exception as e:
-            print(f"Error sending welcome photo for authorized user: {e}")
-            # Fallback to sending text message if photo fails
-            bot.send_message(
-                user_chat_id,
-                welcome_caption,
-                reply_markup=get_main_keyboard(user_id)
-            )
-    else:
-        bot.send_message(
-            user_chat_id,
-            welcome_caption,
-            reply_markup=get_main_keyboard(user_id)
-        )
+    bot.send_message(
+        user_chat_id,
+        welcome_text,
+        reply_markup=get_main_keyboard(user_id)
+    )
 
 # --- Callback Query Handler (Button Presses) ---
 @bot.callback_query_handler(func=lambda call: True)
@@ -315,7 +268,7 @@ def handle_callback_query(call):
                 if e.error_code == 400 and "chat not found" in e.description.lower():
                     message_text += f"- لا يمكن الوصول لـ ID: `{target_id}` (معرف غير صالح أو البوت غير موجود به)\n"
                 elif e.error_code == 403: # Bot was blocked or removed from chat/channel
-                    message_text += f"- لا يمكن الوصول لـ ID: `{target_id}` (البوت محظور أو تم إزالته)\n"
+                     message_text += f"- لا يمكن الوصول لـ ID: `{target_id}` (البوت محظور أو تم إزالته)\n"
                 else:
                     message_text += f"- لا يمكن الوصول لـ ID: `{target_id}` (خطأ غير معروف: {e.description})\n"
                 print(f"خطأ في جلب معلومات الشات {target_id}: {e}") # Log the full error
@@ -399,7 +352,7 @@ def remove_user_by_admin(message):
         elif remove_authorized_user_from_db(user_id_to_remove):
             if user_id_to_remove in AUTHORIZED_USER_IDS:
                 AUTHORIZED_USER_IDS.remove(user_id_to_remove) # Temporarily remove from in-memory list
-            bot.send_message(message.chat.id, f"تمت إزالة المستخدم {user_id_to_remove} بنجاح.") # Changed user_id_to_add to user_id_to_remove
+            bot.send_message(message.chat.id, f"تمت إزالة المستخدم {user_id_to_add} بنجاح.") # Changed user_id_to_add to user_id_to_remove
         else:
             bot.send_message(message.chat.id, f"المستخدم {user_id_to_remove} ليس في قائمة المصرح لهم أصلاً.")
 
@@ -490,7 +443,7 @@ def forward_all_messages_to_user_chats(message):
             print(f"{error_message_for_user} (كود الخطأ: {e.error_code})")
             # Only send error message to user if the target chat is not the same as the source chat
             if target_chat_id != message.chat.id: 
-                    bot.send_message(message.chat.id, error_message_for_user)
+                 bot.send_message(message.chat.id, error_message_for_user)
         except Exception as e: # Catch any other unexpected general errors
             failed_shares += 1
             print(f"❌ فشل الشير إلى {target_chat_id} للمستخدم {user_id} بسبب خطأ عام: {e}")
@@ -528,32 +481,7 @@ def handle_unauthorized_messages(message):
     """Informs unauthorized users that they cannot use the bot and provides contact info."""
     markup = telebot.types.InlineKeyboardMarkup()
     markup.add(telebot.types.InlineKeyboardButton("تواصل مع المالك", url="https://t.me/Mo_sc_ow")) 
-    
-    # Get user's first name for the welcome message
-    user_first_name = message.from_user.first_name if message.from_user.first_name else "صديقي"
-
-    unauthorized_welcome_caption = (
-        "مرحباً بك 🔥\n\n"
-        f"مرحباً بك يا {user_first_name} 👋\n\n"
-        "1- دياثة وتجسس محارم عربي وبدويات 🔥🥵\n\n"
-        "2- تحرش وتجسس جيران اغتصاب حقيقي🥴🥵\n\n"
-        "بـوت حــفـلات ديـاثة سوالــب🥵🌶️\n\n"
-        "🌟 مرحباً بك في بوت الشير المتطور! 🌟\n\n"
-        " لا يمكنك استخدام هذا البوت عليك الرجوع الي المالك \n\n"
-        " MoScCo\n\n"
-        "✨ Developer: @Mo_sc_ow\n\n"
-        " 📢 Channal : @Vib_one"
-    )
-
-    if WELCOME_PHOTO_FILE_ID:
-        try:
-            bot.send_photo(message.chat.id, WELCOME_PHOTO_FILE_ID, caption=unauthorized_welcome_caption, reply_markup=markup)
-        except Exception as e:
-            print(f"Error sending unauthorized welcome photo: {e}")
-            bot.send_message(message.chat.id, unauthorized_welcome_caption, reply_markup=markup)
-    else:
-        bot.send_message(message.chat.id, unauthorized_welcome_caption, reply_markup=markup)
-
+    bot.send_message(message.chat.id, "عذرًا، أنت غير مصرح لك باستخدام هذا البوت. هذا البوت خاص. إذا كنت ترغب في استخدامه، يرجى التواصل مع المالك. MOSCO", reply_markup=markup)
 
 # --- Handler when the Bot is Added to a New Group/Channel ---
 @bot.message_handler(content_types=['new_chat_members'])
