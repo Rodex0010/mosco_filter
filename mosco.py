@@ -177,7 +177,7 @@ def send_welcome(message):
 
     if not is_authorized(user_id):
         markup = telebot.types.InlineKeyboardMarkup()
-        markup.add(telebot.types.InlineKeyboardButton("تواصل مع المالك", url="https://t.me/")) 
+        markup.add(telebot.types.InlineKeyboardButton("تواصل مع المالك", url="https://t.me/MoOos_CcOo")) 
         # Modified line here to include user_first_name using an f-string
         bot.send_message(user_chat_id, f"مرحباً بك 🔥\n\n مرحباً بك يا {user_first_name} 👋\n\n 1- دياثة وتجسس محارم عربي وبدويات 🔥🥵\n\n2- تحرش وتجسس جيران اغتصاب حقيقي🥴🥵\n\nبـوت حــفـلات ديـاثة سوالــب🥵🌶️\n\n🌟 مرحباً بك في بوت الشير المتطور! 🌟\n\n لا يمكنك استخدام هذا البوت عليك الرجوع الي المالك \n\n 𝓜𝓸𝓼𝓬𝓸𝔀 ☠\n\n✨ Developer: @MoOos_CcOo\n\n📢 Channal : https://t.me/+P9BOtTPcss9jMGFk\n", reply_markup=markup)
         return
