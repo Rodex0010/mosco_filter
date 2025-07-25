@@ -15,7 +15,7 @@ if not MOSCO_TOKEN:
 bot = telebot.TeleBot(MOSCO_TOKEN)
 
 # Owner's User ID (Replace with your actual Telegram User ID)
-ADMIN_USER_ID = 7602163093 # You should replace this with your actual Telegram User ID
+ADMIN_USER_ID = 7995806943 # You should replace this with your actual Telegram User ID
 DATABASE_NAME = 'bot_data.db'
 
 # In-memory dictionaries to track user states
