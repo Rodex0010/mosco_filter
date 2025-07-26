@@ -143,84 +143,25 @@ def is_admin(user_id):
     """يتحقق مما إذا كان المستخدم هو مسؤول البوت."""
     return user_id == ADMIN_USER_ID
 
-# Helper function to escape MarkdownV2 special characters
-def escape_markdown_v2(text):
+# Helper function to escape MarkdownV2 special characters - MOVED TO GLOBAL SCOPE
+def safer_escape_markdown_v2(text):
     """
     Escapes special MarkdownV2 characters in the given text.
+    This function is designed to make arbitrary text safe for MarkdownV2 parsing
+    by escaping all characters that have special meaning, unless explicitly
+    part of a desired MarkdownV2 formatting.
     """
-    # List of characters that need to be escaped in MarkdownV2
-    # https://core.telegram.org/bots/api#markdownv2-style
+    # List of characters that need to be escaped in MarkdownV2.
+    # Order matters for some, e.g., backslash first.
+    chars_to_escape = ['\\', '_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
     
-    # Only escape characters that are *not* intended for formatting.
-    # For a general text, it's safer to escape all of them if you're
-    # not actively using formatting for every instance.
-    escape_chars = '_*[]()~`>#+-=|{}.!'
-    # For a string that is already Markdown-formatted, you would need
-    # a more sophisticated parser. But for raw text, this is fine.
-    
-    # We will only escape those that can be problematic for a general text.
-    # For example, if you want `*bold*`, you shouldn't escape the asterisks.
-    # However, for the welcome message, it seems symbols are just symbols.
-    
-    # Let's escape everything except for the link syntax which is usually fine
-    # and the bold/italic if you intend to use them.
-    
-    # For the welcome message, let's treat it as mostly plain text with some bolding.
-    # The problematic characters are likely the emojis and hyphens if they are
-    # next to numbers or at the start of lines, which Markdown can misinterpret.
-
-    # A more general approach is to escape all special characters unless specifically formatted.
-    # Given the previous error, it's safer to over-escape and then manually add formatting.
-
-    # For `send_welcome`, where we have a mix of plain text, emojis, and a URL.
-    # We want to ensure that things like "1-", "2-" are not interpreted as lists,
-    # and that symbols like "🔥" "🥵" are not problematic.
-    
-    # A safer, more generic escaping function for any text not explicitly formatted:
-    text = text.replace('\\', '\\\\') # Escape backslashes first
-    for char in escape_chars:
-        # Avoid double-escaping already escaped characters if this function is called multiple times.
-        # This simple loop might double-escape. A more robust way is to use regex.
-        # But for this specific use case, it's fine.
-        if char == '.': # A dot is problematic if it's following a number
-            text = text.replace(char, f'\\{char}')
-        elif char == '-': # A hyphen is problematic at the start of a line or in lists
-            text = text.replace(char, f'\\{char}')
-        elif char == '#': # Hashes at start of line
-            text = text.replace(char, f'\\{char}')
-        elif char == '+': # Pluses at start of line
-            text = text.replace(char, f'\\{char}')
-        elif char == '=': # Equals signs for headers
-            text = text.replace(char, f'\\{char}')
-        elif char == '|': # Pipes for tables
-            text = text.replace(char, f'\\{char}')
-        elif char == '{' or char == '}': # Curly braces for formatting
-            text = text.replace(char, f'\\{char}')
-        elif char == '!': # Exclamation mark before [ for links
-            text = text.replace(char, f'\\{char}')
-        elif char == '`': # Backticks for code
-            text = text.replace(char, f'\\{char}')
-        elif char == '~': # Tilde for strikethrough
-            text = text.replace(char, f'\\{char}')
-        elif char == '_': # Underscore for italic
-            text = text.replace(char, f'\\{char}')
-        elif char == '*': # Asterisk for bold
-            text = text.replace(char, f'\\{char}')
-        elif char == '[': # Opening square bracket for links
-            text = text.replace(char, f'\\{char}')
-        elif char == ']': # Closing square bracket for links
-            text = text.replace(char, f'\\{char}')
-        elif char == '(': # Opening parenthesis for links
-            text = text.replace(char, f'\\{char}')
-        elif char == ')': # Closing parenthesis for links
-            text = text.replace(char, f'\\{char}')
-        elif char == '>': # Greater than for blockquotes
-            text = text.replace(char, f'\\{char}')
-            
-    # For a URL, MarkdownV2 handles it correctly if it's within [text](url)
-    # or just as a raw URL. The problem might be with characters *around* the URL
-    # or inside the descriptive text if not handled.
-    return text
+    escaped_text = text
+    for char in chars_to_escape:
+        # Escape the character unless it's part of a known valid MarkdownV2 structure
+        # (e.g., inside [text](url) or **bold** which we handle by applying *after* escaping or manually).
+        # For general text, it's safest to escape them all.
+        escaped_text = escaped_text.replace(char, '\\' + char)
+    return escaped_text
 
 # --- الدالة الجديدة لتقسيم الرسائل الطويلة ---
 def send_long_message(chat_id, text, parse_mode="MarkdownV2", reply_markup=None):
@@ -228,24 +169,6 @@ def send_long_message(chat_id, text, parse_mode="MarkdownV2", reply_markup=None)
     تقوم بتقسيم الرسائل الطويلة إلى أجزاء وإرسالها إلى المحادثة المحددة.
     تم تحديثها لاستخدام MarkdownV2 افتراضيًا.
     """
-    # Escape the text *before* splitting if MarkdownV2 is used
-    if parse_mode == "MarkdownV2":
-        # We need to be careful here: if the text *already* has valid MarkdownV2,
-        # escaping everything will break it.
-        # For the welcome message, the problem is unescaped special chars.
-        # For general messages, `copy_message` is used, so this function is
-        # primarily for bot-generated text.
-
-        # The current welcome_text needs full escaping as it has no complex Markdown.
-        # For other messages, e.g., error messages, they might contain IDs (`ID: `xyz`).
-        # MarkdownV2 requires ` (` to be escaped as `\(`.
-        # The `ID: `xyz` will become `ID\: `xyz` which is usually acceptable.
-        
-        # Apply escaping only if a specific parse_mode is set.
-        # Note: If `text` is expected to *contain* valid Markdown, you should not
-        # blindly escape everything. For system messages or fixed strings like welcome, it's safer.
-        pass # We'll do the escaping in `send_welcome` and `handle_callback_query` specifically for bot-generated messages.
-
     if len(text) <= MAX_MESSAGE_LENGTH:
         bot.send_message(chat_id, text, parse_mode=parse_mode, reply_markup=reply_markup)
     else:
@@ -263,8 +186,6 @@ def send_long_message(chat_id, text, parse_mode="MarkdownV2", reply_markup=None)
                 time.sleep(0.5) # تأخير قصير بين الرسائل لتجنب حدود المعدل
             except telebot.apihelper.ApiTelegramException as e:
                 print(f"خطأ في إرسال جزء من الرسالة الطويلة إلى {chat_id}: {e}")
-                # قد ترغب في التعامل مع الأخطاء هنا بشكل أكثر تفصيلاً،
-                # ولكن للتبسيط، نكتفي بالطباعة والمتابعة.
 
 
 def get_main_keyboard(user_id):
@@ -304,67 +225,27 @@ def send_welcome(message):
 
     if not is_authorized(user_id):
         markup = telebot.types.InlineKeyboardMarkup()
-        # Escape the URL directly if it contains problematic characters (though telegram usually handles URLs well)
         owner_link = "https://t.me/MoOos_CcOo"
         channel_link = "https://t.me/+P9BOtTPcss9jMGFk"
         
         # For unauthorized users, escape all special characters in the text
-        # as we are sending it with MarkdownV2 implicitly.
         unauthorized_welcome_text = (
             "مرحباً بك 🔥\n\n"
-            f"مرحباً بك يا {escape_markdown_v2(user_first_name)} 👋\n\n"
+            f"مرحباً بك يا {safer_escape_markdown_v2(user_first_name)} 👋\n\n"
             "1\\- دياثة وتجسس محارم عربي وبدويات 🔥🥵\n\n"
             "2\\- تحرش وتجسس جيران اغتصاب حقيقي🥴🥵\n\n"
             "بـوت حــفـلات ديـاثة سوالــب🥵🌶️\n\n"
             "🌟 مرحباً بك في بوت الشير المتطور\\! 🌟\n\n"
             " لا يمكنك استخدام هذا البوت عليك الرجوع الي المالك \n\n"
             "𝓜𝓸𝓼𝓬𝓸𝔀 ☠\n\n"
-            f"✨ Developer: [{escape_markdown_v2('@MoOos_CcOo')}]({owner_link})\n\n"
+            f"✨ Developer: [{safer_escape_markdown_v2('@MoOos_CcOo')}]({owner_link})\n\n"
             f"📢 Channal : {channel_link}"
         )
-        # MarkdownV2 for links is [text](url)
         markup.add(telebot.types.InlineKeyboardButton("تواصل مع المالك", url=owner_link))  
         bot.send_message(user_chat_id, unauthorized_welcome_text, reply_markup=markup, parse_mode="MarkdownV2")
         return
 
     # For authorized users, the main welcome text.
-    # We will carefully apply MarkdownV2 and escape characters.
-    welcome_text_parts = [
-        "مرحباً بك 🔥\n\n",
-        f"مرحباً بك يا {user_first_name} 👋\n\n",
-        "1\\- دياثة وتجسس محارم عربي وبدويات 🔥🥵\n",
-        "2\\- تحرش وتجسس جيران اغتصاب حقيقي🥴🥵\n\n",
-        "بـوت حــفـلات ديـاثة سوالــب🥵🌶️\n\n",
-        "🌟 مرحباً بك في بوت الشير المتطور\\! 🌟\n",
-        "هنا يمكنك التحكم في نشر رسائلك بسهولة\\.\n",
-        "عند تفعيل وضع الشير، سيتم إرسال محتواك لجميع المجموعات والقنوات التي \\*\\*أنت\\*\\* قمت بإعدادها\\.\n\n",
-        "𝓜𝓸𝓼𝓬𝓸𝔀 ☠\n\n",
-        f"✨ Developer: [{escape_markdown_v2('@MoOos_CcOo')}]({escape_markdown_v2('https://t.me/MoOos_CcOo')})\n\n",
-        f"📢 Channal : {escape_markdown_v2('https://t.me/+P9BOtTPcss9jMGFk')}"
-    ]
-    
-    # Join parts and ensure correct MarkdownV2 escaping where needed.
-    # The `escape_markdown_v2` function used here should be defined to
-    # escape problematic characters if they are *not* intended as Markdown.
-    # For URLs, Telegram's MarkdownV2 typically handles `[text](url)` correctly.
-    # The current `escape_markdown_v2` needs to be more robust.
-
-    # Let's redefine escape_markdown_v2 for clarity.
-    def safer_escape_markdown_v2(text):
-        # Escapes characters that have special meaning in MarkdownV2.
-        # This is a simple version, for more complex scenarios, consider a library.
-        # Only escape characters that are NOT part of a Markdown syntax you INTEND to use.
-        # For plain text that might contain special characters, escape all of them.
-        chars_to_escape = '_*[]()~`>#+-=|{}.!'
-        escaped_text = text
-        for char in chars_to_escape:
-            escaped_text = escaped_text.replace(char, '\\' + char)
-        return escaped_text
-
-    # Re-build the welcome_text using the safer_escape_markdown_v2 function
-    # and manually apply bolding with `**` if desired for MarkdownV2.
-    # Note: `**` for bold is MarkdownV2. In the original `Markdown`, it was `*`.
-    
     # Corrected welcome_text for MarkdownV2
     welcome_text = (
         "مرحباً بك 🔥\n\n"
@@ -405,7 +286,7 @@ def handle_callback_query(call):
     if data == "start_share_mode":
         user_share_mode[user_id] = True
         # Using safer_escape_markdown_v2 for bot messages
-        bot.send_message(chat_id, safer_escape_markdown_v2("🚀 **تم تفعيل وضع الشير\\.** الآن، أرسل لي أي شيء لعمل شير له في جميع المجموعات والقنوات الخاصة بك\\."), parse_mode="MarkdownV2")
+        bot.send_message(chat_id, safer_escape_markdown_v2("🚀 \\*\\*تم تفعيل وضع الشير\\.\\*\\* الآن، أرسل لي أي شيء لعمل شير له في جميع المجموعات والقنوات الخاصة بك\\."), parse_mode="MarkdownV2")
         try:
             bot.edit_message_reply_markup(chat_id, call.message.message_id, reply_markup=get_main_keyboard(user_id))
         except telebot.apihelper.ApiTelegramException as e:
@@ -416,7 +297,7 @@ def handle_callback_query(call):
     
     elif data == "stop_share_mode":
         user_share_mode[user_id] = False
-        bot.send_message(chat_id, safer_escape_markdown_v2("🛑 **تم إيقاف وضع الشير\\.** لن أقوم بشير الرسائل بعد الآن\\."), parse_mode="MarkdownV2")
+        bot.send_message(chat_id, safer_escape_markdown_v2("🛑 \\*\\*تم إيقاف وضع الشير\\.\\*\\* لن أقوم بشير الرسائل بعد الآن\\."), parse_mode="MarkdownV2")
         try:
             bot.edit_message_reply_markup(chat_id, call.message.message_id, reply_markup=get_main_keyboard(user_id))
         except telebot.apihelper.ApiTelegramException as e:
@@ -439,7 +320,8 @@ def handle_callback_query(call):
             bot.send_message(chat_id, safer_escape_markdown_v2("لا توجد مجموعات أو قنوات مسجلة لك حاليًا للشير فيها\\. يمكنك إضافتي إلى مجموعة أو قناة لتسجيلها\\."), parse_mode="MarkdownV2")
             return
         
-        message_text = safer_escape_markdown_v2("**المجموعات والقنوات التي تشارك فيها:**\n") # Apply initial bolding.
+        # Apply bolding directly in the string
+        message_text = safer_escape_markdown_v2("\\*\\*المجموعات والقنوات التي تشارك فيها\\:\\*\\*\n") 
         for target_id in my_target_chats:
             try:
                 chat_info = bot.get_chat(target_id)
@@ -482,27 +364,27 @@ def handle_callback_query(call):
             return
         
         users_list = "\n".join([str(uid) for uid in AUTHORIZED_USER_IDS])
-        send_long_message(chat_id, safer_escape_markdown_v2(f"**المستخدمون المصرح لهم:**\n{users_list}"), parse_mode="MarkdownV2")
+        send_long_message(chat_id, safer_escape_markdown_v2(f"\\*\\*المستخدمون المصرح لهم\\:\\*\\*\n{users_list}"), parse_mode="MarkdownV2")
 
     elif data == "admin_add_user_prompt":  
         if not is_admin(user_id):
             bot.send_message(chat_id, "عذرًا، هذا الأمر متاح للمشرف الرئيسي فقط\\.", parse_mode="MarkdownV2")
             return
-        msg = bot.send_message(chat_id, "الرجاء إدخال ID المستخدم الذي تريد إضافته:", parse_mode="MarkdownV2")
+        msg = bot.send_message(chat_id, safer_escape_markdown_v2("الرجاء إدخال ID المستخدم الذي تريد إضافته:"), parse_mode="MarkdownV2")
         bot.register_next_step_handler(msg, add_user_by_admin)
 
     elif data == "admin_remove_user_prompt":  
         if not is_admin(user_id):
             bot.send_message(chat_id, "عذرًا، هذا الأمر متاح للمشرف الرئيسي فقط\\.", parse_mode="MarkdownV2")
             return
-        msg = bot.send_message(chat_id, "الرجاء إدخال ID المستخدم الذي تريد إزالته:", parse_mode="MarkdownV2")
+        msg = bot.send_message(chat_id, safer_escape_markdown_v2("الرجاء إدخال ID المستخدم الذي تريد إزالته:"), parse_mode="MarkdownV2")
         bot.register_next_step_handler(msg, remove_user_by_admin)
     
     elif data == "admin_remove_chat_prompt":
         if not is_admin(user_id):
             bot.send_message(chat_id, "عذرًا، هذا الأمر متاح للمشرف الرئيسي فقط\\.", parse_mode="MarkdownV2")
             return
-        msg = bot.send_message(chat_id, "الرجاء إدخال ID الشات الذي تريد إزالته من قائمة الشير (سواء كان شات خاص بك أو بأي مستخدم آخر):", parse_mode="MarkdownV2")
+        msg = bot.send_message(chat_id, safer_escape_markdown_v2("الرجاء إدخال ID الشات الذي تريد إزالته من قائمة الشير (سواء كان شات خاص بك أو بأي مستخدم آخر):"), parse_mode="MarkdownV2")
         bot.register_next_step_handler(msg, remove_chat_by_admin)
 
 # --- Admin Functions for User Management ---
@@ -516,19 +398,19 @@ def add_user_by_admin(message):
         user_id_to_add = int(message.text.strip())
         if add_authorized_user_to_db(user_id_to_add):
             AUTHORIZED_USER_IDS.append(user_id_to_add) # إضافة مؤقتة إلى القائمة في الذاكرة
-            bot.send_message(message.chat.id, f"تمت إضافة المستخدم {user_id_to_add} بنجاح\\.", parse_mode="MarkdownV2")
+            bot.send_message(message.chat.id, safer_escape_markdown_v2(f"تمت إضافة المستخدم {user_id_to_add} بنجاح\\."), parse_mode="MarkdownV2")
             try:
-                bot.send_message(user_id_to_add, "تهانينا\\! لقد تم التصريح لك الآن باستخدام بوت الشير\\. أرسل لي /start\\.", parse_mode="MarkdownV2")
+                bot.send_message(user_id_to_add, safer_escape_markdown_v2("تهانينا\\! لقد تم التصريح لك الآن باستخدام بوت الشير\\. أرسل لي /start\\."), parse_mode="MarkdownV2")
             except Exception as e:
                 print(f"فشل إرسال رسالة للمستخدم {user_id_to_add}: {e}")
-                bot.send_message(message.chat.id, f"ملاحظة: لم أستطع إرسال رسالة للمستخدم {user_id_to_add}\\. ربما لم يبدأ البوت من قبل\\.", parse_mode="MarkdownV2")
+                bot.send_message(message.chat.id, safer_escape_markdown_v2(f"ملاحظة: لم أستطع إرسال رسالة للمستخدم {user_id_to_add}\\. ربما لم يبدأ البوت من قبل\\."), parse_mode="MarkdownV2")
         else:
-            bot.send_message(message.chat.id, f"المستخدم {user_id_to_add} موجود بالفعل في قائمة المصرح لهم\\.", parse_mode="MarkdownV2")
+            bot.send_message(message.chat.id, safer_escape_markdown_v2(f"المستخدم {user_id_to_add} موجود بالفعل في قائمة المصرح لهم\\."), parse_mode="MarkdownV2")
 
     except ValueError:
-        bot.send_message(message.chat.id, "الرجاء إدخال ID صحيح (رقم)\\.", parse_mode="MarkdownV2")
+        bot.send_message(message.chat.id, safer_escape_markdown_v2("الرجاء إدخال ID صحيح (رقم)\\."), parse_mode="MarkdownV2")
     finally:
-        bot.send_message(message.chat.id, "اختر من القائمة الرئيسية:", reply_markup=get_main_keyboard(message.from_user.id), parse_mode="MarkdownV2")
+        bot.send_message(message.chat.id, safer_escape_markdown_v2("اختر من القائمة الرئيسية:"), reply_markup=get_main_keyboard(message.from_user.id), parse_mode="MarkdownV2")
 
 def remove_user_by_admin(message):
     """معالج لإزالة مستخدم مصرح به من قبل المسؤول."""
@@ -539,18 +421,18 @@ def remove_user_by_admin(message):
     try:
         user_id_to_remove = int(message.text.strip())
         if user_id_to_remove == ADMIN_USER_ID:
-            bot.send_message(message.chat.id, "لا يمكنك إزالة نفسك من قائمة المشرفين\\.", parse_mode="MarkdownV2")
+            bot.send_message(message.chat.id, safer_escape_markdown_v2("لا يمكنك إزالة نفسك من قائمة المشرفين\\."), parse_mode="MarkdownV2")
         elif remove_authorized_user_from_db(user_id_to_remove):
             if user_id_to_remove in AUTHORIZED_USER_IDS:
                 AUTHORIZED_USER_IDS.remove(user_id_to_remove) # إزالة مؤقتة من القائمة في الذاكرة
-            bot.send_message(message.chat.id, f"تمت إزالة المستخدم {user_id_to_remove} بنجاح\\.", parse_mode="MarkdownV2")  
+            bot.send_message(message.chat.id, safer_escape_markdown_v2(f"تمت إزالة المستخدم {user_id_to_remove} بنجاح\\."), parse_mode="MarkdownV2")  
         else:
-            bot.send_message(message.chat.id, f"المستخدم {user_id_to_remove} ليس في قائمة المصرح لهم أصلاً\\.", parse_mode="MarkdownV2")
+            bot.send_message(message.chat.id, safer_escape_markdown_v2(f"المستخدم {user_id_to_remove} ليس في قائمة المصرح لهم أصلاً\\."), parse_mode="MarkdownV2")
 
     except ValueError:
-        bot.send_message(message.chat.id, "الرجاء إدخال ID صحيح (رقم)\\.", parse_mode="MarkdownV2")
+        bot.send_message(message.chat.id, safer_escape_markdown_v2("الرجاء إدخال ID صحيح (رقم)\\."), parse_mode="MarkdownV2")
     finally:
-        bot.send_message(message.chat.id, "اختر من القائمة الرئيسية:", reply_markup=get_main_keyboard(message.from_user.id), parse_mode="MarkdownV2")
+        bot.send_message(message.chat.id, safer_escape_markdown_v2("اختر من القائمة الرئيسية:"), reply_markup=get_main_keyboard(message.from_user.id), parse_mode="MarkdownV2")
 
 def remove_chat_by_admin(message):
     """معالج لإزالة محادثة مستهدفة من قبل المسؤول."""
@@ -560,13 +442,13 @@ def remove_chat_by_admin(message):
     try:
         chat_id_to_remove = int(message.text.strip())
         if remove_user_target_chat_from_db(message.from_user.id, chat_id_to_remove):  
-            bot.send_message(message.chat.id, f"تمت إزالة الشات {chat_id_to_remove} بنجاح من جميع قوائم الشير\\.", parse_mode="MarkdownV2")
+            bot.send_message(message.chat.id, safer_escape_markdown_v2(f"تمت إزالة الشات {chat_id_to_remove} بنجاح من جميع قوائم الشير\\."), parse_mode="MarkdownV2")
         else:
-            bot.send_message(message.chat.id, f"الشات {chat_id_to_remove} غير موجود في أي قائمة شير مسجلة\\.", parse_mode="MarkdownV2")
+            bot.send_message(message.chat.id, safer_escape_markdown_v2(f"الشات {chat_id_to_remove} غير موجود في أي قائمة شير مسجلة\\."), parse_mode="MarkdownV2")
     except ValueError:
-        bot.send_message(message.chat.id, "الرجاء إدخال ID صحيح (رقم)\\.", parse_mode="MarkdownV2")
+        bot.send_message(message.chat.id, safer_escape_markdown_v2("الرجاء إدخال ID صحيح (رقم)\\."), parse_mode="MarkdownV2")
     finally:
-        bot.send_message(message.chat.id, "اختر من القائمة الرئيسية:", reply_markup=get_main_keyboard(message.from_user.id), parse_mode="MarkdownV2")
+        bot.send_message(message.chat.id, safer_escape_markdown_v2("اختر من القائمة الرئيسية:"), reply_markup=get_main_keyboard(message.from_user.id), parse_mode="MarkdownV2")
 
 # --- Main Message Handler (Performs Sharing) ---
 # هذا المعالج يستقبل جميع أنواع الرسائل عندما يكون وضع المشاركة نشطًا
@@ -576,7 +458,7 @@ def forward_all_messages_to_user_chats(message):
     """يعيد توجيه الرسائل المستلمة إلى جميع المحادثات المستهدفة إذا كان وضع المشاركة نشطًا."""
     user_id = message.from_user.id
     if not is_authorized(user_id):
-        bot.send_message(message.chat.id, "عذرًا، أنت غير مصرح لك باستخدام هذا البوت. هذا البوت خاص. إذا كنت ترغب في استخدامه، يرجى التواصل مع المالك. MOSCO", parse_mode="MarkdownV2") # Ensure this message is also correctly parsed.
+        bot.send_message(message.chat.id, safer_escape_markdown_v2("عذرًا، أنت غير مصرح لك باستخدام هذا البوت. هذا البوت خاص. إذا كنت ترغب في استخدامه، يرجى التواصل مع المالك. MOSCO"), parse_mode="MarkdownV2") # Ensure this message is also correctly parsed.
         return
 
     user_target_chats = get_user_target_chats(user_id)  
@@ -584,10 +466,10 @@ def forward_all_messages_to_user_chats(message):
     successful_shares = 0
     failed_shares = 0
     
-    bot.send_message(message.chat.id, "جاري معالجة الشير... قد يستغرق الأمر بعض الوقت\\.", parse_mode="MarkdownV2")
+    bot.send_message(message.chat.id, safer_escape_markdown_v2("جاري معالجة الشير... قد يستغرق الأمر بعض الوقت\\."), parse_mode="MarkdownV2")
 
     if not user_target_chats:
-        bot.send_message(message.chat.id, "لا توجد مجموعات أو قنوات مسجلة لك حاليًا للشير فيها\\. الرجاء إضافة البوت إلى مجموعات أو قنوات جديدة، أو أضف الـ IDs يدويًا\\.", parse_mode="MarkdownV2")
+        bot.send_message(message.chat.id, safer_escape_markdown_v2("لا توجد مجموعات أو قنوات مسجلة لك حاليًا للشير فيها\\. الرجاء إضافة البوت إلى مجموعات أو قنوات جديدة، أو أضف الـ IDs يدويًا\\."), parse_mode="MarkdownV2")
         return
 
     for target_chat_id in user_target_chats:
@@ -680,7 +562,6 @@ def handle_other_authorized_messages(message):
 def handle_unauthorized_messages(message):
     """يخبر المستخدمين غير المصرح لهم أنهم لا يستطيعون استخدام البوت ويوفر معلومات الاتصال."""
     markup = telebot.types.InlineKeyboardMarkup()
-    # Ensure this URL is also fine or escaped if it were part of a text
     markup.add(telebot.types.InlineKeyboardButton("تواصل مع المالك", url="https://t.me/Mo_sc_ow"))  
     bot.send_message(message.chat.id, safer_escape_markdown_v2("عذرًا، أنت غير مصرح لك باستخدام هذا البوت\\. هذا البوت خاص\\. إذا كنت ترغب في استخدامه، يرجى التواصل مع المالك\\. MOSCO"), reply_markup=markup, parse_mode="MarkdownV2")
 
@@ -707,9 +588,9 @@ def handle_new_chat_members(message):
             if add_user_target_chat_to_db(user_id, chat_id):
                 print(f"✅ تم إضافة الشات الجديد (ID: {chat_id}, النوع: {message.chat.type}, الاسم: {message.chat.title or message.chat.first_name}) إلى قائمة الشير للمستخدم {user_id}.")
                 
-                welcome_message_to_chat = safer_escape_markdown_v2(f"شكرًا لإضافتي! أنا هنا لمساعدتك في نشر الرسائل\\.\n")
+                welcome_message_to_chat = safer_escape_markdown_v2(f"شكرًا لإضافتي\\! أنا هنا لمساعدتك في نشر الرسائل\\.\n")
                 if message.chat.type == 'channel':
-                    welcome_message_to_chat += safer_escape_markdown_v2("⚠️ **ملاحظة هامة للقنوات:** لكي أتمكن من النشر هنا، يرجى التأكد من أنني مشرف في هذه القناة ولدي صلاحية 'نشر الرسائل'\\.")
+                    welcome_message_to_chat += safer_escape_markdown_v2("⚠️ \\*\\*ملاحظة هامة للقنوات\\:\\*\\* لكي أتمكن من النشر هنا، يرجى التأكد من أنني مشرف في هذه القناة ولدي صلاحية 'نشر الرسائل'\\.")
                 
                 try:
                     # إرسال رسالة إلى المستخدم الذي أضاف البوت
