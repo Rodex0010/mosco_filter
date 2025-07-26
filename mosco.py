@@ -88,7 +88,7 @@ def remove_authorized_user_from_db(user_id):
 
 def get_user_target_chats(user_id):
     """يجلب معرفات المحادثات المستهدفة لمستخدم معين.
-       مُعدّل: الآن، يمكن لأي مستخدم مصرح له المشاركة في جميع المحادثات المميزة."""
+        مُعدّل: الآن، يمكن لأي مستخدم مصرح له المشاركة في جميع المحادثات المميزة."""
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
     
@@ -208,7 +208,8 @@ def send_welcome(message):
         markup = telebot.types.InlineKeyboardMarkup()
         markup.add(telebot.types.InlineKeyboardButton("تواصل مع المالك", url="https://t.me/MoOos_CcOo")) 
         # السطر المعدّل هنا لتضمين user_first_name باستخدام f-string
-        bot.send_message(user_chat_id, f"مرحباً بك 🔥\n\n مرحباً بك يا {user_first_name} 👋\n\n 1- دياثة وتجسس محارم عربي وبدويات 🔥🥵\n\n2- تحرش وتجسس جيران اغتصاب حقيقي🥴🥵\n\nبـوت حــفـلات ديـاثة سوالــب🥵🌶️\n\n🌟 مرحباً بك في بوت الشير المتطور! 🌟\n\n لا يمكنك استخدام هذا البوت عليك الرجوع الي المالك \n\n 𝓜𝓸𝓼𝓬𝓸𝔀 ☠\n\n✨ Developer: @MoOos_CcOo\n\n📢 Channal : https://t.me/+P9BOtTPcss9jMGFk\n", reply_markup=markup)
+        # تم تعديل parse_mode إلى "HTML" وتنسيق الرابط
+        bot.send_message(user_chat_id, f"مرحباً بك 🔥\n\n مرحباً بك يا {user_first_name} 👋\n\n 1- دياثة وتجسس محارم عربي وبدويات 🔥🥵\n\n2- تحرش وتجسس جيران اغتصاب حقيقي🥴🥵\n\nبـوت حــفـلات ديـاثة سوالــب🥵🌶️\n\n🌟 مرحباً بك في بوت الشير المتطور! 🌟\n\n لا يمكنك استخدام هذا البوت عليك الرجوع الي المالك \n\n 𝓜𝓸𝓼𝓬𝓸𝔀 ☠\n\n✨ Developer: @MoOos_CcOo\n\n📢 Channal : <a href='https://t.me/+P9BOtTPcss9jMGFk'>https://t.me/+P9BOtTPcss9jMGFk</a>\n", reply_markup=markup, parse_mode="HTML")
         return
 
     welcome_text = (
@@ -219,16 +220,17 @@ def send_welcome(message):
         "بـوت حــفـلات ديـاثة سوالــب🥵🌶️\n\n"
         "🌟 مرحباً بك في بوت الشير المتطور! 🌟\n"
         "هنا يمكنك التحكم في نشر رسائلك بسهولة.\n"
-        "عند تفعيل وضع الشير، سيتم إرسال محتواك لجميع المجموعات والقنوات التي **أنت** قمت بإعدادها.\n\n"
+        "عند تفعيل وضع الشير، سيتم إرسال محتواك لجميع المجموعات والقنوات التي <b>أنت</b> قمت بإعدادها.\n\n" # تم التغيير لـ <b> للـ HTML
         "𝓜𝓸𝓼𝓬𝓸𝔀 ☠\n\n"
         "✨ Developer: @MoOos_CcOo\n\n"
-        "📢 Channal : https://t.me/+P9BOtTPcss9jMGFk"
+        "📢 Channal : <a href='https://t.me/+P9BOtTPcss9jMGFk'>https://t.me/+P9BOtTPcss9jMGFk</a>" # رابط HTML
     )
 
     # استخدام الدالة الجديدة لإرسال رسالة الترحيب
     send_long_message(
         user_chat_id,
         welcome_text,
+        parse_mode="HTML", # <--- غيّر ده إلى "HTML"
         reply_markup=get_main_keyboard(user_id)
     )
 
@@ -248,7 +250,7 @@ def handle_callback_query(call):
 
     if data == "start_share_mode":
         user_share_mode[user_id] = True
-        bot.send_message(chat_id, "🚀 **تم تفعيل وضع الشير.** الآن، أرسل لي أي شيء لعمل شير له في جميع المجموعات والقنوات الخاصة بك.")
+        bot.send_message(chat_id, "🚀 **تم تفعيل وضع الشير.** الآن، أرسل لي أي شيء لعمل شير له في جميع المجموعات والقنوات الخاصة بك.", parse_mode="Markdown") # إضافة parse_mode
         try:
             bot.edit_message_reply_markup(chat_id, call.message.message_id, reply_markup=get_main_keyboard(user_id))
         except telebot.apihelper.ApiTelegramException as e:
@@ -259,7 +261,7 @@ def handle_callback_query(call):
     
     elif data == "stop_share_mode":
         user_share_mode[user_id] = False
-        bot.send_message(chat_id, "🛑 **تم إيقاف وضع الشير.** لن أقوم بشير الرسائل بعد الآن.")
+        bot.send_message(chat_id, "🛑 **تم إيقاف وضع الشير.** لن أقوم بشير الرسائل بعد الآن.", parse_mode="Markdown") # إضافة parse_mode
         try:
             bot.edit_message_reply_markup(chat_id, call.message.message_id, reply_markup=get_main_keyboard(user_id))
         except telebot.apihelper.ApiTelegramException as e:
@@ -454,6 +456,8 @@ def forward_all_messages_to_user_chats(message):
                     # إزالة المحادثة تلقائيًا من قائمة المستخدم إذا لم يتم العثور عليها
                     if remove_user_target_chat_from_db(user_id, target_chat_id):
                         error_message_for_user += " تم إزالة الشات تلقائيًا من قائمة الشير الخاصة بك."
+                else: # Catch all other 400 errors for more general debugging
+                    error_message_for_user += f"خطأ في الطلب: {e.description}"
             elif e.error_code == 403: # ممنوع
                 error_message_for_user += "البوت محظور أو تم إزالته من هذه القناة/المجموعة. يرجى إعادة إضافته أو إلغاء حظره."
                 # إزالة المحادثة تلقائيًا من قائمة المستخدم إذا كانت ممنوعة
@@ -519,7 +523,8 @@ def handle_unauthorized_messages(message):
     """يخبر المستخدمين غير المصرح لهم أنهم لا يستطيعون استخدام البوت ويوفر معلومات الاتصال."""
     markup = telebot.types.InlineKeyboardMarkup()
     markup.add(telebot.types.InlineKeyboardButton("تواصل مع المالك", url="https://t.me/Mo_sc_ow")) 
-    bot.send_message(message.chat.id, "عذرًا، أنت غير مصرح لك باستخدام هذا البوت. هذا البوت خاص. إذا كنت ترغب في استخدامه، يرجى التواصل مع المالك. MOSCO", reply_markup=markup)
+    # تم تعديل parse_mode إلى "HTML"
+    bot.send_message(message.chat.id, "عذرًا، أنت غير مصرح لك باستخدام هذا البوت. هذا البوت خاص. إذا كنت ترغب في استخدامه، يرجى التواصل مع المالك. MOSCO", reply_markup=markup, parse_mode="HTML")
 
 # --- Handler when the Bot is Added to a New Group/Channel ---
 @bot.message_handler(content_types=['new_chat_members'])
@@ -534,7 +539,7 @@ def handle_new_chat_members(message):
             if not is_authorized(user_id):
                 try:
                     bot.send_message(chat_id, "عذرًا، لا يمكنني العمل في هذا الشات لأن المستخدم الذي أضافني غير مصرح له. يرجى التواصل مع المالك. MOSCO", 
-                                     reply_markup=telebot.types.InlineKeyboardMarkup().add(telebot.types.InlineKeyboardButton("تواصل مع المالك", url="https://t.me/Mo_sc_ow")))
+                                     reply_markup=telebot.types.InlineKeyboardMarkup().add(telebot.types.InlineKeyboardButton("تواصل مع المالك", url="https://t.me/Mo_sc_ow")), parse_mode="HTML") # إضافة parse_mode هنا أيضًا
                     bot.leave_chat(chat_id) # اختياريًا، اجعل البوت يغادر إذا كان المضيف غير مصرح له
                 except Exception as e:
                     print(f"فشل إرسال رسالة المغادرة أو المغادرة من شات {chat_id}: {e}")
@@ -546,7 +551,7 @@ def handle_new_chat_members(message):
                 
                 welcome_message_to_chat = f"شكرًا لإضافتي! أنا هنا لمساعدتك في نشر الرسائل.\n"
                 if message.chat.type == 'channel':
-                    welcome_message_to_chat += "⚠️ **ملاحظة هامة للقنوات:** لكي أتمكن من النشر هنا، يرجى التأكد من أنني مشرف في هذه القناة ولدي صلاحية 'نشر الرسائل'."
+                    welcome_message_to_chat += "⚠️ <b>ملاحظة هامة للقنوات:</b> لكي أتمكن من النشر هنا، يرجى التأكد من أنني مشرف في هذه القناة ولدي صلاحية 'نشر الرسائل'." # تغيير لـ HTML
                 
                 try:
                     # إرسال رسالة إلى المستخدم الذي أضاف البوت
@@ -555,7 +560,7 @@ def handle_new_chat_members(message):
                     time.sleep(1) # تأخير قصير
                     # إرسال رسالة ترحيب في المجموعة/القناة الجديدة نفسها
                     # استخدام send_long_message هنا أيضًا
-                    send_long_message(chat_id, welcome_message_to_chat)
+                    send_long_message(chat_id, welcome_message_to_chat, parse_mode="HTML") # إضافة parse_mode هنا
                 except telebot.apihelper.ApiTelegramException as e:
                     if e.error_code == 429: # تجاوز حد المعدل
                         retry_after = e.result_json.get('parameters', {}).get('retry_after', 5)
@@ -564,7 +569,7 @@ def handle_new_chat_members(message):
                         try: # إعادة محاولة إرسال الرسائل بعد التأخير
                             send_long_message(user_id, f"تم تسجيل هذه المجموعة/القناة (ID: `{chat_id}`, الاسم: `{message.chat.title or message.chat.first_name}`) لقائمة الشير الخاصة بك.", parse_mode="Markdown")
                             time.sleep(1)
-                            send_long_message(chat_id, welcome_message_to_chat)
+                            send_long_message(chat_id, welcome_message_to_chat, parse_mode="HTML") # إضافة parse_mode هنا
                         except Exception as retry_e:
                             print(f"❌ فشل إرسال رسالة الترحيب بعد الانتظار: {retry_e}")
                     else:
